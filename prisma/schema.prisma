@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  VENDOR
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+
+  products  Product[]
+  orders    Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+
+  vendorId    String
+  vendor      User    @relation(fields: [vendorId], references: [id])
+
+  isAvailable Boolean @default(true)
+
+  orderItems  OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+
+  totalPrice      Float
+  status          String   @default("PENDING")
+  deliveryAddress String
+
+  items           OrderItem[]
+  payment         Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id               String @id @default(uuid())
+  orderId          String
+  productId        String
+
+  order            Order   @relation(fields: [orderId], references: [id])
+  product          Product @relation(fields: [productId], references: [id])
+
+  quantity         Int
+  priceAtPurchase  Float
+}
+
+model Payment {
+  id            String @id @default(uuid())
+  orderId       String @unique
+  order         Order  @relation(fields: [orderId], references: [id])
+
+  provider      String
+  transactionId String?
+  amount        Float
+  status        String  @default("PENDING")
+
+  createdAt DateTime @default(now())
+}
+
+model Receipt {
+  id         String @id @default(uuid())
+  orderId    String @unique
+
+  receiptUrl String
+
+  createdAt DateTime @default(now())
+}
