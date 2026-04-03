@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { prisma } from "@/lib/prisma";
 import { generateAccessToken, generateRefreshToken } from './auth.utils';
+import jwt from 'jsonwebtoken';
 
 export const registeredUser = async (data: any)=>{
     const existingUser = await prisma.user.findUnique({
@@ -43,6 +44,33 @@ export const loginUser = async (data: any) => {
 
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+    });
     
     return { accessToken, refreshToken };
 };
+
+export const refreshUser = async (token: string) => {
+    try {
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as any;
+
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+        })
+
+        if (!user || user.refreshToken !== token) {
+            throw new Error("Invalid refresh token");
+        }
+
+        const newAccessToken = generateAccessToken({ id: user.id, role: user.role, });
+
+        const newRefreshToken = generateRefreshToken({ id: user.id, role: user.role, });
+
+        return { accesstoken: newAccessToken, refreshToken: newRefreshToken };
+    } catch {
+        throw new Error("Token expired or Invalid");
+    }
+}

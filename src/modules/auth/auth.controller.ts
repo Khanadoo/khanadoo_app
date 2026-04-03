@@ -1,5 +1,6 @@
-import { registeredUser, loginUser } from './auth.service';
+import { registeredUser, loginUser, refreshUser } from './auth.service';
 import { registerSchema, loginSchema } from './auth.schema';
+import { cookies } from 'next/headers';
 
 export const register = async (req: Request) => {
     const body = await req.json();
@@ -16,7 +17,36 @@ export const login = async (req: Request) => {
 
     const parsed = loginSchema.parse(body);
 
-    const tokens = await loginUser(parsed);
+    const { accessToken, refreshToken } = await loginUser(parsed);
 
-    return Response.json(tokens);
+    (await cookies()).set("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60,
+        path: "/",
+    });
+
+    return Response.json({ accessToken });
+};
+
+export const refresh = async () => {
+    const cookieStore = cookies();
+    const token = (await cookieStore).get("refreshToken")?.value;
+
+    if (!token) {
+        return Response.json({ error: "No refresh token provided" }, { status: 401 });
+    }
+
+    const { accesstoken: accessToken, refreshToken } = await refreshUser(token);
+
+    (await cookieStore).set("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60,
+        path: "/",
+    });
+
+    return Response.json({ accessToken });
 };
