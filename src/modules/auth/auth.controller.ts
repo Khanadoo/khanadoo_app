@@ -1,6 +1,7 @@
 import { registeredUser, loginUser, refreshUser } from './auth.service';
 import { registerSchema, loginSchema } from './auth.schema';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 export const register = async (req: Request) => {
     const body = await req.json();
@@ -49,4 +50,26 @@ export const refresh = async () => {
     });
 
     return Response.json({ accessToken });
+};
+
+export const logout = async() => {
+    const cookieStore = cookies();
+    const token = (await cookieStore).get("refreshToken")?.value;
+
+    if (token) {
+        const user = await prisma.user.findFirst({
+            where: { refreshToken: token },
+        });
+
+        if (user){
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { refreshToken: null },
+            });
+        }
+    }
+
+    (await cookieStore).delete("refreshToken");
+
+    return Response.json({ message: "Logged out successfully" });
 };
