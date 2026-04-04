@@ -45,9 +45,11 @@ export const loginUser = async (data: any) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+
     await prisma.user.update({
         where: { id: user.id },
-        data: { refreshToken },
+        data: { refreshToken: hashedToken },
     });
     
     return { accessToken, refreshToken };
@@ -63,6 +65,12 @@ export const refreshUser = async (token: string) => {
 
         if (!user || user.refreshToken !== token) {
             throw new Error("Invalid refresh token");
+        }
+
+        const isValid = await bcrypt.compare(token, user.refreshToken);
+
+        if(!isValid) {
+            throw new Error("Invalid token");
         }
 
         const newAccessToken = generateAccessToken({ id: user.id, role: user.role, });

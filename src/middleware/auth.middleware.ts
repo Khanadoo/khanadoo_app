@@ -14,7 +14,8 @@ export const verifyToken = (req: Request) => {
     }
 
     try {
-        return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string);
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string);
+        return decoded;
     } catch (err: any) {
         throw new Error("Invalid or expired token");
     }
