@@ -3,8 +3,16 @@ import { registerSchema, loginSchema } from "./auth.schema";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { rateLimit } from "@/lib/rateLimiter";
 
 export const register = async (req: Request) => {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+
+  await rateLimit(`login:${ip}`, {
+    limit: 5,
+    window: 60,
+  });
+  
   const body = await req.json();
 
   const parsed = registerSchema.parse(body);
@@ -15,6 +23,13 @@ export const register = async (req: Request) => {
 };
 
 export const login = async (req: Request) => {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+
+  await rateLimit(`login:${ip}`, {
+    limit: 5,
+    window: 60,
+  });
+
   const body = await req.json();
 
   const parsed = loginSchema.parse(body);
@@ -24,7 +39,7 @@ export const login = async (req: Request) => {
   (await cookies()).set("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60,
     path: "/",
   });
@@ -32,7 +47,14 @@ export const login = async (req: Request) => {
   return Response.json({ accessToken });
 };
 
-export const refresh = async () => {
+export const refresh = async (req: Request) => {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+
+  await rateLimit(`login:${ip}`, {
+    limit: 10,
+    window: 60,
+  });
+
   const cookieStore = cookies();
   const token = (await cookieStore).get("refreshToken")?.value;
 
@@ -48,7 +70,7 @@ export const refresh = async () => {
   (await cookieStore).set("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60,
     path: "/",
   });
