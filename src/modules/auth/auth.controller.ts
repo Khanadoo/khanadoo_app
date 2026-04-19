@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { rateLimit } from "@/lib/rateLimiter";
+import { generateCSRFToken } from "@/lib/csrf";
+import { requireCSRF } from "@/middleware/csrf.middleware";
 
 export const register = async (req: Request) => {
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
@@ -36,8 +38,18 @@ export const login = async (req: Request) => {
 
   const { accessToken, refreshToken } = await loginUser(parsed);
 
+  const csrfToken = generateCSRFToken();
+
   (await cookies()).set("refreshToken", refreshToken, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60,
+    path: "/",
+  });
+
+  (await cookies()).set("csrfToken", csrfToken, {
+    httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60,
@@ -48,6 +60,8 @@ export const login = async (req: Request) => {
 };
 
 export const refresh = async (req: Request) => {
+  await requireCSRF(req);
+
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
   await rateLimit(`login:${ip}`, {
@@ -78,7 +92,9 @@ export const refresh = async (req: Request) => {
   return Response.json({ accessToken });
 };
 
-export const logout = async () => {
+export const logout = async (req: Request) => {
+  await requireCSRF(req);
+
   const cookieStore = cookies();
   const token = (await cookieStore).get("refreshToken")?.value;
 
