@@ -1,6 +1,11 @@
 import jwt from 'jsonwebtoken';
 
-export const verifyToken = (req: Request) => {
+type JWTPayload = {
+    id: string;
+    role: string;
+};
+
+export const verifyToken = (req: Request): JWTPayload => {
     const authHeader = req.headers.get("authorization");
 
     if(!authHeader) {
@@ -14,7 +19,7 @@ export const verifyToken = (req: Request) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string);
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JWTPayload;
         return decoded;
     } catch (err: any) {
         throw new Error("Invalid or expired token");

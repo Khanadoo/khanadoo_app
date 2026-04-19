@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { generateAccessToken, generateRefreshToken } from "./auth.utils";
 import jwt from "jsonwebtoken";
 
+const MAX_SESSIONS = 5;
+
 export const registeredUser = async (data: any) => {
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
@@ -46,6 +48,23 @@ export const loginUser = async (data: any) => {
   const refreshToken = generateRefreshToken(payload);
 
   const hashedToken = await bcrypt.hash(refreshToken, 10);
+
+  await prisma.refreshToken.deleteMany({
+    where: { userId: user.id, expiresAt: { lt: new Date() } },
+  });
+
+  const existingSessions = await prisma.refreshToken.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (existingSessions.length >= MAX_SESSIONS) {
+    const oldeestSession = existingSessions[0];
+
+    await prisma.refreshToken.delete({
+      where: { id: oldeestSession.id },
+    });
+  }
 
   await prisma.refreshToken.create({
     data: {
