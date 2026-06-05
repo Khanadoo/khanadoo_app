@@ -12,6 +12,20 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -19,7 +33,7 @@ model User {
   password  String
   role      Role     @default(STUDENT)
 
-  products  Product[]
+  foodItems FoodItem[]
   orders    Order[]
   refreshTokens RefreshToken[]
 
@@ -27,17 +41,16 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
-model Product {
+model FoodItem {
   id          String  @id @default(uuid())
   name        String
   description String?
   price       Float
   imageUrl    String?
+  isAvailable Boolean @default(true)
 
   vendorId    String
   vendor      User    @relation(fields: [vendorId], references: [id])
-
-  isAvailable Boolean @default(true)
 
   orderItems  OrderItem[]
 
@@ -51,7 +64,7 @@ model Order {
   user            User     @relation(fields: [userId], references: [id])
 
   totalPrice      Float
-  status          String   @default("PENDING")
+  status          OrderStatus @default(PENDING)
   deliveryAddress String
 
   items           OrderItem[]
@@ -63,11 +76,12 @@ model Order {
 
 model OrderItem {
   id               String @id @default(uuid())
-  orderId          String
-  productId        String
 
+  orderId          String
   order            Order   @relation(fields: [orderId], references: [id])
-  product          Product @relation(fields: [productId], references: [id])
+
+  foodItemId       String
+  foodItem         FoodItem @relation(fields: [foodItemId], references: [id])
 
   quantity         Int
   priceAtPurchase  Float
@@ -81,7 +95,7 @@ model Payment {
   provider      String
   transactionId String?
   amount        Float
-  status        String  @default("PENDING")
+  status        PaymentStatus @default(PENDING)
 
   createdAt DateTime @default(now())
 }
@@ -89,7 +103,6 @@ model Payment {
 model Receipt {
   id         String @id @default(uuid())
   orderId    String @unique
-
   receiptUrl String
 
   createdAt DateTime @default(now())

@@ -1,13 +1,18 @@
-import { verifyToken } from "./auth.middleware";
+import { Role } from "@prisma/client";
+import { getUserFromRequest } from "@/lib/getUserFromRequest";
 
-export const authorize = (roles: string[]) => {
-    return (req: Request) => {
-        const user = verifyToken(req);
+export const authorize = (roles: Role[]) => {
+    return async (req: Request) => {
+        const user = await getUserFromRequest(req);
 
-        if (!roles.includes(user.role)){
-            throw new Error("Forbidden");
+        if (!user){
+            return { error: "Unauthorized", status: 401 };
         }
 
-        return user;
+        if (!roles.includes(user.role)) {
+            return { error: "Forbidden", status: 403 };
+        }
+
+        return { user };
     };
 };
