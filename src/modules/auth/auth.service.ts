@@ -2,10 +2,15 @@ import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
 import { generateAccessToken, generateRefreshToken } from "./auth.utils";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
+import { registerSchema, loginSchema } from "./auth.schema";
+
+type RegisterInput = z.infer<typeof registerSchema>;
+type LoginInput = z.infer<typeof loginSchema>;
 
 const MAX_SESSIONS = 5;
 
-export const registeredUser = async (data: any) => {
+export const registeredUser = async (data: RegisterInput) => {
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
   });
@@ -21,19 +26,33 @@ export const registeredUser = async (data: any) => {
       name: data.name,
       email: data.email,
       password: hashedPassword,
-      role: data.role || "STUDENT",
+      phone: data.phone,
+      role: "USER",
     },
   });
 
-  return user;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 };
 
-export const loginUser = async (data: any) => {
+export const loginUser = async (data: LoginInput) => {
   const user = await prisma.user.findUnique({
     where: { email: data.email },
   });
 
   if (!user) throw new Error("invalid credentials");
+
+  if (user.status === "BANNED") {
+    throw new Error("User is banned");
+  }
+
+  if (user.status === "SUSPENDED") {
+    throw new Error("Account is suspended. Please contact support.");
+  }
 
   const isMatch = await bcrypt.compare(data.password, user.password);
 
@@ -74,7 +93,17 @@ export const loginUser = async (data: any) => {
     },
   });
 
-  return { accessToken, refreshToken };
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+    },
+  };
 };
 
 export const refreshUser = async (token: string) => {

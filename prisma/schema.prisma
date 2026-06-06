@@ -7,23 +7,41 @@ datasource db {
 }
 
 enum Role {
-  STUDENT
-  VENDOR
+  USER
+  BROKER
   ADMIN
 }
 
-enum OrderStatus {
+enum PropertyType {
+  ROOM
+  PG
+  HOUSE
+  APARTMENT
+}
+
+enum PropertyPurpose {
+  RENT
+  SALE
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RENTED
+  SOLD
+}
+
+enum EnquiryStatus {
   PENDING
-  CONFIRMED
-  PREPARING
-  DELIVERED
+  CONTACTED
+  NEGOTIATING
+  CLOSED
   CANCELLED
 }
 
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
 }
 
 model User {
@@ -31,81 +49,16 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      Role     @default(STUDENT)
+  phone     String?
+  role      Role     @default(USER)
 
-  foodItems FoodItem[]
-  orders    Order[]
+  status    UserStatus @default(ACTIVE)
+
+  enquiries Enquiry[]
   refreshTokens RefreshToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model FoodItem {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-  price       Float
-  imageUrl    String?
-  isAvailable Boolean @default(true)
-
-  vendorId    String
-  vendor      User    @relation(fields: [vendorId], references: [id])
-
-  orderItems  OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Order {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-
-  totalPrice      Float
-  status          OrderStatus @default(PENDING)
-  deliveryAddress String
-
-  items           OrderItem[]
-  payment         Payment?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model OrderItem {
-  id               String @id @default(uuid())
-
-  orderId          String
-  order            Order   @relation(fields: [orderId], references: [id])
-
-  foodItemId       String
-  foodItem         FoodItem @relation(fields: [foodItemId], references: [id])
-
-  quantity         Int
-  priceAtPurchase  Float
-}
-
-model Payment {
-  id            String @id @default(uuid())
-  orderId       String @unique
-  order         Order  @relation(fields: [orderId], references: [id])
-
-  provider      String
-  transactionId String?
-  amount        Float
-  status        PaymentStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-}
-
-model Receipt {
-  id         String @id @default(uuid())
-  orderId    String @unique
-  receiptUrl String
-
-  createdAt DateTime @default(now())
 }
 
 model RefreshToken {
@@ -116,4 +69,70 @@ model RefreshToken {
 
   createdAt DateTime @default(now())
   expiresAt DateTime
+}
+
+model Property {
+  id String @id @default(uuid())
+
+  title       String
+  description String?
+
+  type         PropertyType
+  purpose      PropertyPurpose
+  status       PropertyStatus @default(AVAILABLE)
+
+  price        Float
+
+  city         String
+  locality     String
+  address      String
+
+  bedrooms     Int?
+  bathrooms    Int?
+  area         Float?
+
+  imageUrls    String[]
+
+  ownerId      String
+  owner        Owner @relation(fields: [ownerId], references: [id])
+
+  brokerName   String?
+  brokerPhone  String?
+
+  featured     Boolean @default(false)
+  verified     Boolean @default(false)
+
+  enquiries    Enquiry[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Enquiry {
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  phone   String
+  message String?
+
+  status EnquiryStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Owner {
+  id String @id @default(uuid())
+
+  name  String
+  phone String
+
+  properties Property[]
+
+  createdAt DateTime @default(now())
 }

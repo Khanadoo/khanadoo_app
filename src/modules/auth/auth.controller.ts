@@ -10,7 +10,7 @@ import { requireCSRF } from "@/middleware/csrf.middleware";
 export const register = async (req: Request) => {
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
-  await rateLimit(`login:${ip}`, {
+  await rateLimit(`register:${ip}`, {
     limit: 5,
     window: 60,
   });
@@ -21,7 +21,12 @@ export const register = async (req: Request) => {
 
   const user = await registeredUser(parsed);
 
-  return Response.json(user);
+  return Response.json({
+    success: true,
+    user,
+  },
+  { status: 201 }
+  );
 };
 
 export const login = async (req: Request) => {
@@ -36,7 +41,7 @@ export const login = async (req: Request) => {
 
   const parsed = loginSchema.parse(body);
 
-  const { accessToken, refreshToken } = await loginUser(parsed);
+  const { accessToken, refreshToken, user } = await loginUser(parsed);
 
   const csrfToken = generateCSRFToken();
 
@@ -56,7 +61,7 @@ export const login = async (req: Request) => {
     path: "/",
   });
 
-  return Response.json({ accessToken });
+  return Response.json({ accessToken, user });
 };
 
 export const refresh = async (req: Request) => {
@@ -64,7 +69,7 @@ export const refresh = async (req: Request) => {
 
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
-  await rateLimit(`login:${ip}`, {
+  await rateLimit(`refresh:${ip}`, {
     limit: 10,
     window: 60,
   });
@@ -95,8 +100,19 @@ export const refresh = async (req: Request) => {
 export const logout = async (req: Request) => {
   await requireCSRF(req);
 
-  const cookieStore = cookies();
-  const token = (await cookieStore).get("refreshToken")?.value;
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  await rateLimit(`logout:${ip}`, {
+    limit: 20,
+    window: 60,
+  });
+
+  const cookieStore = await cookies();
+
+  const token = cookieStore.get("refreshToken")?.value;
 
   if (token) {
     const tokens = await prisma.refreshToken.findMany();
@@ -105,6 +121,7 @@ export const logout = async (req: Request) => {
 
     for (const t of tokens) {
       const isMatch = await bcrypt.compare(token, t.token);
+
       if (isMatch) {
         validToken = t;
         break;
@@ -113,12 +130,18 @@ export const logout = async (req: Request) => {
 
     if (validToken) {
       await prisma.refreshToken.delete({
-        where: { id: validToken.id },
+        where: {
+          id: validToken.id,
+        },
       });
     }
   }
 
-  (await cookieStore).delete("refreshToken");
+  cookieStore.delete("refreshToken");
+  cookieStore.delete("csrfToken");
 
-  return Response.json({ message: "Logged out successfully" });
+  return Response.json({
+    success: true,
+    message: "Logged out successfully",
+  });
 };
