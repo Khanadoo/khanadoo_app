@@ -10,7 +10,7 @@ export async function POST(req: Request) {
         window: 60,
     });
 
-    const auth = await authorize(["BROKER", "ADMIN"])(req);
+    const auth = await authorize(["OWNER", "ADMIN"])(req);
 
     if ("error" in auth) {
         return new Response(JSON.stringify({ error: auth.error }), { status: auth.status });
