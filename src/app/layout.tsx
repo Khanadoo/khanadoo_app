@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "Khanadoo",
@@ -18,9 +19,9 @@ export default function RootLayout({
       className="h-full scroll-smooth antialiased"
     >
       <body className="min-h-full bg-[var(--background)] text-[var(--foreground)]">
-          <div className="relative flex min-h-screen flex-col">
-            <main className="flex-1">{children}</main>
-          </div>
+        <div className="relative flex min-h-screen flex-col">
+          <main className="flex-1"><AuthProvider>{children}</AuthProvider></main>
+        </div>
       </body>
     </html>
   );

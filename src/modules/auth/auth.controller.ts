@@ -6,31 +6,39 @@ import bcrypt from "bcrypt";
 import { rateLimit } from "@/lib/rateLimiter";
 import { generateCSRFToken } from "@/lib/csrf";
 import { requireCSRF } from "@/middleware/csrf.middleware";
+import jwt from "jsonwebtoken";
 
 export const register = async (req: Request) => {
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
 
   await rateLimit(`register:${ip}`, {
     limit: 5,
     window: 60,
   });
-  
+
   const body = await req.json();
 
   const parsed = registerSchema.parse(body);
 
   const user = await registeredUser(parsed);
 
-  return Response.json({
-    success: true,
-    user,
-  },
-  { status: 201 }
+  return Response.json(
+    {
+      success: true,
+      user,
+    },
+    { status: 201 },
   );
 };
 
 export const login = async (req: Request) => {
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
 
   await rateLimit(`login:${ip}`, {
     limit: 5,
@@ -67,7 +75,10 @@ export const login = async (req: Request) => {
 export const refresh = async (req: Request) => {
   await requireCSRF(req);
 
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
 
   await rateLimit(`refresh:${ip}`, {
     limit: 10,
@@ -144,4 +155,66 @@ export const logout = async (req: Request) => {
     success: true,
     message: "Logged out successfully",
   });
+};
+
+export const me = async (req: Request) => {
+  const authHeader = req.headers.get("authorization");
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return Response.json(
+      {
+        error: "Unauthorized",
+      },
+      {
+        status: 401,
+      },
+    );
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as {
+      id: string;
+      role: string;
+    };
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: decoded.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user) {
+      return Response.json(
+        {
+          error: "User not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    return Response.json({
+      user,
+    });
+  } catch {
+    return Response.json(
+      {
+        error: "Invalid token",
+      },
+      {
+        status: 401,
+      },
+    );
+  }
 };
