@@ -19,7 +19,7 @@ interface AuthContextType {
         name: string,
         email: string,
         password: string,
-        phone?: string,
+        phone: string,
     ) => Promise<void>;
 
     logout: () => Promise<void>;
@@ -58,7 +58,7 @@ export function AuthProvider({
         name: string,
         email: string,
         password: string,
-        phone?: string
+        phone: string
     ) => {
         const response = await authClient.register({
             name,
