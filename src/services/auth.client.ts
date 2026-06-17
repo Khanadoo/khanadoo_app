@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { LoginFormData, RegisterFormData } from "@/types/forms";
+import { getCSRFToken } from "@/lib/client-csrf";
 
 export interface AuthUser {
   id: string;
@@ -59,12 +60,18 @@ export const authClient = {
   refresh() {
     return apiFetch<RefreshResponse>("/api/auth/refresh", {
       method: "POST",
+      headers: {
+        "x-csrf-token": getCSRFToken(),
+      }
     });
   },
 
   logout() {
     return apiFetch<LogoutResponse>("/api/auth/logout", {
       method: "POST",
+      headers: {
+        "x-csrf-token": getCSRFToken(),
+      }
     });
   },
 };
