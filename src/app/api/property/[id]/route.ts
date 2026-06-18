@@ -19,7 +19,6 @@ export async function GET(
             phone: true,
           },
         },
-        enquiries: true,
       },
     });
 
