@@ -76,7 +76,12 @@ export async function GET(req: Request) {
         status: "AVAILABLE",
       },
       include: {
-        owner: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
       },
       skip,
       take: limit,
