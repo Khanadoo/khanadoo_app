@@ -74,6 +74,7 @@ export async function GET(req: Request) {
     const properties = await prisma.property.findMany({
       where: { 
         status: "AVAILABLE",
+        isActive: true,
       },
       include: {
         owner: {

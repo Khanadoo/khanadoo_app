@@ -6,6 +6,10 @@ import { useParams } from "next/navigation";
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { Button } from "@/components/ui";
+import { Modal } from "@/components/ui";
+
+import EnquiryForm from "@/components/enquiry/EnquiryForm";
 
 import { propertyClient } from "@/services/property.client";
 
@@ -24,6 +28,8 @@ export default function PropertyDetailsPage() {
 
     const [error, setError] =
         useState("");
+
+    const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
     useEffect(() => {
         const loadProperty = async () => {
@@ -193,8 +199,33 @@ export default function PropertyDetailsPage() {
                                 "Not provided"}
                         </p>
                     </div>
+
+                    <div className="mt-6">
+                        <Button size="md"
+                            onClick={() =>
+                                setShowEnquiryModal(true)
+                            }
+                        >
+                            Enquire Now
+                        </Button>
+                    </div>
                 </section>
             </main>
+
+            <Modal
+                open={showEnquiryModal}
+                title="Send Enquiry"
+                onClose={() =>
+                    setShowEnquiryModal(false)
+                }
+            >
+                <EnquiryForm
+                    propertyId={property.id}
+                    onSuccess={() =>
+                        setShowEnquiryModal(false)
+                    }
+                />
+            </Modal>
 
             <Footer />
         </>
