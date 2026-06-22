@@ -46,7 +46,7 @@ export default function Navbar() {
                                 Dashboard
                             </Link>
 
-                            <Link href="/profile">
+                            <Link href="/owner">
                                 Profile
                             </Link>
 
