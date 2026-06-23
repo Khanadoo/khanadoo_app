@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -36,7 +36,7 @@ export interface PropertyFormValues {
 }
 
 interface PropertyFormProps {
-    initialValues?: PropertyFormValues;
+    initialValues?: Partial<PropertyFormValues>;
 
     onSubmit: (
         values: PropertyFormValues
@@ -44,6 +44,26 @@ interface PropertyFormProps {
 
     submitLabel?: string;
 }
+
+const defaultValues: PropertyFormValues = {
+    title: "",
+    description: "",
+
+    type: "ROOM",
+    purpose: "RENT",
+
+    price: 0,
+
+    city: "",
+    locality: "",
+    address: "",
+
+    bedrooms: undefined,
+    bathrooms: undefined,
+    area: undefined,
+
+    imageUrls: [],
+};
 
 export default function PropertyForm({
     initialValues,
@@ -59,27 +79,17 @@ export default function PropertyForm({
         useState(false);
 
     const [form, setForm] =
-        useState<PropertyFormValues>(
-            initialValues || {
-                title: "",
-                description: "",
+        useState<PropertyFormValues>({
+            ...defaultValues,
+            ...initialValues,
+        });
 
-                type: "ROOM",
-                purpose: "RENT",
-
-                price: 0,
-
-                city: "",
-                locality: "",
-                address: "",
-
-                bedrooms: undefined,
-                bathrooms: undefined,
-                area: undefined,
-
-                imageUrls: [],
-            }
-        );
+    useEffect(() => {
+        setForm({
+            ...defaultValues,
+            ...initialValues,
+        });
+    }, [initialValues]);
 
     const handleChange = (
         key: keyof PropertyFormValues,
@@ -119,7 +129,7 @@ export default function PropertyForm({
                         const result =
                             await uploadClient.upload(
                                 file,
-                                accessToken,
+                                accessToken
                             );
 
                         return result.url;
@@ -144,12 +154,16 @@ export default function PropertyForm({
         }
     };
 
-    const removeImage = (url: string) => {
+    const removeImage = (
+        url: string
+    ) => {
         setForm((prev) => ({
             ...prev,
-            imageUrls: prev.imageUrls.filter(
-                (img) => img !== url
-            ),
+
+            imageUrls:
+                prev.imageUrls.filter(
+                    (img) => img !== url
+                ),
         }));
     };
 
@@ -192,7 +206,7 @@ export default function PropertyForm({
                 />
             </div>
 
-            {/* Type */}
+            {/* Property Type */}
 
             <div>
                 <label className="mb-1 block text-sm font-medium">
@@ -204,7 +218,7 @@ export default function PropertyForm({
                     onChange={(e) =>
                         handleChange(
                             "type",
-                            e.target.value
+                            e.target.value as PropertyType
                         )
                     }
                     className="w-full rounded-lg border border-gray-300 p-2"
@@ -239,7 +253,7 @@ export default function PropertyForm({
                     onChange={(e) =>
                         handleChange(
                             "purpose",
-                            e.target.value
+                            e.target.value as PropertyPurpose
                         )
                     }
                     className="w-full rounded-lg border border-gray-300 p-2"
@@ -321,7 +335,9 @@ export default function PropertyForm({
                     handleChange(
                         "bedrooms",
                         e.target.value
-                            ? Number(e.target.value)
+                            ? Number(
+                                e.target.value
+                            )
                             : undefined
                     )
                 }
@@ -337,7 +353,9 @@ export default function PropertyForm({
                     handleChange(
                         "bathrooms",
                         e.target.value
-                            ? Number(e.target.value)
+                            ? Number(
+                                e.target.value
+                            )
                             : undefined
                     )
                 }
@@ -353,13 +371,15 @@ export default function PropertyForm({
                     handleChange(
                         "area",
                         e.target.value
-                            ? Number(e.target.value)
+                            ? Number(
+                                e.target.value
+                            )
                             : undefined
                     )
                 }
             />
 
-            {/* Images Placeholder */}
+            {/* Images */}
 
             <div className="space-y-3">
                 <label className="block text-sm font-medium">
@@ -377,46 +397,39 @@ export default function PropertyForm({
                 )}
 
                 <div className="grid grid-cols-3 gap-3">
-                    {form.imageUrls.map((url) => (
-                        <img
-                            key={url}
-                            src={url}
-                            alt="Property"
-                            className="h-24 w-full rounded-lg object-cover border"
-                        />
-                    ))}
+                    {form.imageUrls.map(
+                        (url) => (
+                            <div
+                                key={url}
+                                className="relative"
+                            >
+                                <img
+                                    src={url}
+                                    alt="Property"
+                                    className="h-24 w-full rounded-lg border object-cover"
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        removeImage(url)
+                                    }
+                                    className="absolute right-1 top-1 rounded-full bg-red-500 px-2 text-white"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )
+                    )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-                {form.imageUrls.map((url) => (
-                    <div
-                        key={url}
-                        className="relative"
-                    >
-                        <img
-                            src={url}
-                            alt="Property"
-                            className="h-24 w-full rounded-lg object-cover border"
-                        />
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                removeImage(url)
-                            }
-                            className="absolute right-1 top-1 rounded-full  bg-red-500 px-2  text-white"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                ))}
-            </div>
-
             <Button
-                size="md"
                 type="submit"
-                disabled={loading}
+                size="md"
+                disabled={
+                    loading || uploading
+                }
             >
                 {loading
                     ? "Saving..."

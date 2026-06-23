@@ -34,6 +34,9 @@ export default function MyPropertiesPage() {
     const [showCreateModal, setShowCreateModal] =
         useState(false);
 
+    const [editingProperty, setEditingProperty] =
+        useState<Property | null>(null);
+
     useEffect(() => {
         const loadProperties = async () => {
             if (!accessToken) return;
@@ -78,6 +81,64 @@ export default function MyPropertiesPage() {
         );
 
         setShowCreateModal(false);
+    };
+
+    const handleDelete = async (
+        propertyId: string
+    ) => {
+        if (!accessToken) return;
+
+        const confirmed = window.confirm(
+            "Delete this property?"
+        );
+
+        if (!confirmed) return;
+
+        try {
+            await propertyClient.delete(
+                propertyId,
+                accessToken
+            );
+
+            setProperties((prev) =>
+                prev.filter(
+                    (p) => p.id !== propertyId
+                )
+            );
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
+    const handleEdit = async (
+        values: PropertyFormValues
+    ) => {
+        if (
+            !editingProperty ||
+            !accessToken
+        )
+            return;
+
+        try {
+            await propertyClient.update(
+                editingProperty.id,
+                values,
+                accessToken
+            );
+
+            const refreshed =
+                await propertyClient.getMyProperties(
+                    accessToken
+                );
+
+            setProperties(
+                refreshed.properties
+            );
+
+            setEditingProperty(null);
+        } catch (err: any) {
+            alert(err.message);
+        }
     };
 
     if (loading) {
@@ -131,21 +192,18 @@ export default function MyPropertiesPage() {
                                 />
 
                                 <div className="flex gap-2">
-                                    <Link
-                                        href={`/owner/properties/${property.id}/edit`}
-                                        className="flex-1"
+                                    <Button size="md"
+                                        variant="secondary"
+                                        className="w-full"
+                                        onClick={() => setEditingProperty(property)}
                                     >
-                                        <Button size="md"
-                                            variant="secondary"
-                                            className="w-full"
-                                        >
-                                            Edit
-                                        </Button>
-                                    </Link>
+                                        Edit
+                                    </Button>
 
                                     <Button size="md"
                                         variant="danger"
                                         className="flex-1"
+                                        onClick={() => handleDelete(property.id)}
                                     >
                                         Delete
                                     </Button>
@@ -160,12 +218,65 @@ export default function MyPropertiesPage() {
             <Modal
                 open={showCreateModal}
                 title="Add property"
-                onClose={()=>setShowCreateModal(false)}
+                onClose={() => setShowCreateModal(false)}
             >
                 <PropertyForm
                     submitLabel="Create Property"
                     onSubmit={handleCreateProperty}
                 />
+            </Modal>
+            <Modal
+                open={!!editingProperty}
+                title="Edit Property"
+                onClose={() =>
+                    setEditingProperty(null)
+                }
+            >
+                {editingProperty && (
+                    <PropertyForm
+                        initialValues={{
+                            title:
+                                editingProperty.title,
+
+                            description:
+                                editingProperty.description ?? "",
+
+                            type:
+                                editingProperty.type,
+
+                            purpose:
+                                editingProperty.purpose,
+
+                            price:
+                                editingProperty.price,
+
+                            city:
+                                editingProperty.city,
+
+                            locality:
+                                editingProperty.locality,
+
+                            address:
+                                editingProperty.address,
+
+                            bedrooms:
+                                editingProperty.bedrooms,
+
+                            bathrooms:
+                                editingProperty.bathrooms,
+
+                            area:
+                                editingProperty.area,
+
+                            imageUrls:
+                                editingProperty.imageUrls,
+                        }}
+
+                        submitLabel="Update Property"
+
+                        onSubmit={handleEdit}
+                    />
+                )}
             </Modal>
         </>
     );

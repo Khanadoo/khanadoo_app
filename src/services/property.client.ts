@@ -45,4 +45,26 @@ export const propertyClient = {
       body: JSON.stringify(data),
     });
   },
+
+  update(id: string, data: PropertyFormValues, accessToken: string) {
+    return apiFetch<Property>(`/api/property/${id}`, {
+      method: "PUT",
+
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(id: string, accessToken: string) {
+    return apiFetch(`/api/property/${id}`, {
+      method: "DELETE",
+
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
 };

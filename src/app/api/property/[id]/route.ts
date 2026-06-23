@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/middleware/role.middleware";
+import { success } from "zod";
 
 export async function GET(
   req: Request,
@@ -152,7 +153,10 @@ export async function DELETE(
       },
     });
 
-    return new Response("Deleted successfully", { status: 204 });
+    return Response.json({
+      success: true,
+      message: "Property deleted successfully",
+    });
   } catch (error) {
     console.error("Error deleting property:", error);
     return new Response(
