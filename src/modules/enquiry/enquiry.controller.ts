@@ -8,6 +8,7 @@ import {
   createEnquiry,
   getUserEnquiries,
   getPropertyEnquiries,
+  getOwnerEnquiries,
   updateEnquiryStatus,
 } from "./enquiry.service";
 
@@ -91,6 +92,21 @@ export const getProperty = async (req: Request, propertyId: string) => {
   });
 };
 
+export const getOwner = async (req: Request) => {
+  const auth = await authorize(["OWNER"])(req);
+
+  if ("error" in auth) {
+    return Response.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const enquiries = await getOwnerEnquiries(auth.user.id);
+
+  return Response.json({
+    success: true,
+    enquiries,
+  });
+};
+
 export const updateStatus = async (req: Request, enquiryId: string) => {
   const auth = await authorize(["OWNER", "ADMIN"])(req);
 
@@ -127,4 +143,3 @@ export const updateStatus = async (req: Request, enquiryId: string) => {
     enquiry: updated,
   });
 };
-

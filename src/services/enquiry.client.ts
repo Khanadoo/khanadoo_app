@@ -25,6 +25,11 @@ export interface PropertyEnquiriesResponse {
   enquiries: EnquiryWithUser[];
 }
 
+export interface OwnerEnquiriesResponse {
+  success: boolean;
+  enquiries: EnquiryWithUser[];
+}
+
 export interface UpdateEnquiryPayload {
   status: EnquiryStatus;
 }
@@ -39,7 +44,7 @@ export const enquiryClient = {
     return apiFetch<CreateEnquiryResponse>("/api/enquiry", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(data),
     });
@@ -49,15 +54,35 @@ export const enquiryClient = {
     return apiFetch<UserEnquiriesResponse>("/api/enquiry");
   },
 
-  getProperty(propertyId: string) {
+  getProperty(propertyId: string, accessToken: string) {
     return apiFetch<PropertyEnquiriesResponse>(
       `/api/enquiry/property/${propertyId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
     );
   },
 
-  updateStatus(enquiryId: string, data: UpdateEnquiryPayload) {
+  getOwner(accessToken: string) {
+    return apiFetch<OwnerEnquiriesResponse>("/api/enquiry/owner", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  updateStatus(
+    enquiryId: string,
+    data: UpdateEnquiryPayload,
+    accessToken: string,
+  ) {
     return apiFetch<UpdateEnquiryResponse>(`/api/enquiry/${enquiryId}`, {
       method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
       body: JSON.stringify(data),
     });
   },

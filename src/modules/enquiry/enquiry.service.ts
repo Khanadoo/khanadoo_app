@@ -87,6 +87,33 @@ export const getPropertyEnquiries = async (propertyId: string) => {
   });
 };
 
+export const getOwnerEnquiries = async (ownerId: string) => {
+  return prisma.enquiry.findMany({
+    where: {
+      property: {
+        ownerId,
+      },
+    },
+
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+
+      property: true,
+    },
+
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
 export const updateEnquiryStatus = async (
   enquiryId: string,
   data: UpdateEnquiryInput,
