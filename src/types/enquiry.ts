@@ -30,3 +30,9 @@ export interface EnquiryUser {
 export interface EnquiryWithUser extends Enquiry {
   user: EnquiryUser;
 }
+
+export interface EnquiryWithUserAndProperty extends Enquiry{
+  user: EnquiryUser;
+  property: Property;
+}
+

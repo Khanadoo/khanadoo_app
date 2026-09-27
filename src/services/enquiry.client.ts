@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 
-import { Enquiry, EnquiryWithProperty, EnquiryWithUser } from "@/types/enquiry";
+import { Enquiry, EnquiryWithProperty, EnquiryWithUser, EnquiryWithUserAndProperty } from "@/types/enquiry";
 
 import { EnquiryStatus } from "@/types/common";
 
@@ -27,7 +27,7 @@ export interface PropertyEnquiriesResponse {
 
 export interface OwnerEnquiriesResponse {
   success: boolean;
-  enquiries: EnquiryWithUser[];
+  enquiries: EnquiryWithUserAndProperty[];
 }
 
 export interface UpdateEnquiryPayload {
