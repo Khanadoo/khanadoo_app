@@ -1,6 +1,11 @@
 import { apiFetch } from "@/lib/api";
 
-import { Enquiry, EnquiryWithProperty, EnquiryWithUser, EnquiryWithUserAndProperty } from "@/types/enquiry";
+import {
+  Enquiry,
+  EnquiryWithProperty,
+  EnquiryWithUser,
+  EnquiryWithUserAndProperty,
+} from "@/types/enquiry";
 
 import { EnquiryStatus } from "@/types/common";
 
@@ -50,8 +55,13 @@ export const enquiryClient = {
     });
   },
 
-  getMine() {
-    return apiFetch<UserEnquiriesResponse>("/api/enquiry");
+  getMine(accessToken: string) {
+    return apiFetch<UserEnquiriesResponse>("/api/enquiry", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
   },
 
   getProperty(propertyId: string, accessToken: string) {
