@@ -45,14 +45,14 @@ enum UserStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  phone     String?
+  id       String  @id @default(uuid())
+  name     String
+  email    String  @unique
+  password String
+  phone    String?
 
-  role      Role     @default(USER)
-  status    UserStatus @default(ACTIVE)
+  role   Role       @default(USER)
+  status UserStatus @default(ACTIVE)
 
   enquiries Enquiry[]
 
@@ -60,15 +60,17 @@ model User {
 
   refreshTokens RefreshToken[]
 
+  messages Message[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  token  String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
   expiresAt DateTime
@@ -80,9 +82,9 @@ model Property {
   title       String
   description String?
 
-  type         PropertyType
-  purpose      PropertyPurpose
-  status       PropertyStatus @default(AVAILABLE)
+  type    PropertyType
+  purpose PropertyPurpose
+  status  PropertyStatus  @default(AVAILABLE)
 
   price Float
 
@@ -97,7 +99,7 @@ model Property {
   imageUrls String[]
 
   ownerId String
-  owner   User @relation("OwnerProperties", fields: [ownerId], references: [id])
+  owner   User   @relation("OwnerProperties", fields: [ownerId], references: [id])
 
   featured Boolean @default(false)
   verified Boolean @default(false)
@@ -114,16 +116,37 @@ model Enquiry {
   id String @id @default(uuid())
 
   userId String
-  user User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   propertyId String
-  property Property @relation(fields: [propertyId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
 
   phone   String
   message String?
 
   status EnquiryStatus @default(PENDING)
 
+  messages Message[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id String @id @default(uuid())
+
+  enquiryId String
+  enquiry   Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  content String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enquiryId])
+  @@index([senderId])
+  @@index([createdAt])
 }
