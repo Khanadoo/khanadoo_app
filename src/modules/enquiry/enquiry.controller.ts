@@ -14,6 +14,8 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
+import { publishEnquiryUpdated } from "@/lib/ably.server";
+
 export const create = async (req: Request) => {
   const auth = await authorize(["USER", "OWNER", "ADMIN"])(req);
 
@@ -137,6 +139,12 @@ export const updateStatus = async (req: Request, enquiryId: string) => {
   const parsed = updateEnquirySchema.parse(body);
 
   const updated = await updateEnquiryStatus(enquiryId, parsed);
+
+  try {
+    await publishEnquiryUpdated(enquiryId, updated);
+  } catch (error) {
+    console.error("Ably enquiry update publish error:", error);
+  }
 
   return Response.json({
     success: true,

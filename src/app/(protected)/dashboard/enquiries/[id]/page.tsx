@@ -19,6 +19,10 @@ import {
     EnquiryWithUserAndProperty,
 } from "@/types/enquiry";
 
+import * as Ably from "ably";
+
+import { createAblyClient } from "@/lib/ably.client";
+
 export default function ConversationPage() {
     const params = useParams();
     const router = useRouter();
@@ -53,6 +57,8 @@ export default function ConversationPage() {
     const messagesEndRef = useRef<HTMLDivElement | null>(
         null,
     );
+
+    const ablyRef = useRef<Ably.Realtime | null>(null);
 
     const isConversationClosed =
         enquiry?.status === "CLOSED" ||
@@ -149,6 +155,139 @@ export default function ConversationPage() {
         }
     }, [loading, messages.length]);
 
+    useEffect(() => {
+        if (!accessToken || !user || !enquiryId) {
+            return;
+        }
+
+        let active = true;
+
+        const setupRealtime = async () => {
+            try {
+                const ably =
+                    createAblyClient(enquiryId, accessToken);
+
+                ablyRef.current = ably;
+
+                const channel =
+                    ably.channels.get(
+                        `enquiry:${enquiryId}`,
+                    );
+
+                await channel.subscribe(
+                    "message.created",
+                    (message) => {
+                        if (!active) {
+                            return;
+                        }
+
+                        const data =
+                            message.data as {
+                                message?: Message;
+                            };
+
+                        const incomingMessage =
+                            data?.message;
+
+                        if (!incomingMessage) {
+                            return;
+                        }
+
+                        setMessages(
+                            (currentMessages) => {
+                                const alreadyExists =
+                                    currentMessages.some(
+                                        (item) =>
+                                            item.id ===
+                                            incomingMessage.id,
+                                    );
+
+                                if (
+                                    alreadyExists
+                                ) {
+                                    return currentMessages;
+                                }
+
+                                return [
+                                    ...currentMessages,
+                                    incomingMessage,
+                                ];
+                            },
+                        );
+                    },
+                );
+
+                channel.subscribe(
+                    "enquiry.updated",
+                    (message) => {
+                        const updatedEnquiry =
+                            message.data?.enquiry;
+
+                        if (!updatedEnquiry) {
+                            return;
+                        }
+
+                        setEnquiry((currentEnquiry) => {
+                            if (!currentEnquiry) {
+                                return currentEnquiry;
+                            }
+
+                            return {
+                                ...currentEnquiry,
+                                status: updatedEnquiry.status,
+                                updatedAt: updatedEnquiry.updatedAt,
+                            };
+                        });
+                    },
+                );
+
+                if (active) {
+                    console.log(
+                        "Ably connected to:",
+                        `enquiry:${enquiryId}`,
+                    );
+                }
+            } catch (error) {
+                if (!active) {
+                    return;
+                }
+
+                console.error(
+                    "Ably subscription error:",
+                    error,
+                );
+            }
+        };
+
+        setupRealtime();
+
+        return () => {
+            active = false;
+
+            const ably =
+                ablyRef.current;
+
+            if (!ably) {
+                return;
+            }
+
+            const channel =
+                ably.channels.get(
+                    `enquiry:${enquiryId}`,
+                );
+
+            channel.unsubscribe();
+
+            ably.close();
+
+            ablyRef.current = null;
+        };
+    }, [
+        accessToken,
+        user?.id,
+        enquiryId,
+    ]);
+
     const sendMessage = async () => {
         const content = newMessage.trim();
 
@@ -169,16 +308,26 @@ export default function ConversationPage() {
             const response =
                 await messageClient.sendMessage(
                     enquiryId,
-                    {
-                        content,
-                    },
+                    { content },
                     accessToken,
                 );
 
-            setMessages((currentMessages) => [
-                ...currentMessages,
-                response.message,
-            ]);
+            setMessages((currentMessages) => {
+                const alreadyExists =
+                    currentMessages.some(
+                        (item) =>
+                            item.id === response.message.id,
+                    );
+
+                if (alreadyExists) {
+                    return currentMessages;
+                }
+
+                return [
+                    ...currentMessages,
+                    response.message,
+                ];
+            });
 
             setNewMessage("");
 
