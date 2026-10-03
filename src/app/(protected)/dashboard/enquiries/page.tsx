@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -349,29 +350,43 @@ export default function UserEnquiriesPage() {
 
                                     <div className="mt-6 flex flex-col gap-4 border-t pt-5 sm:flex-row sm:items-end sm:justify-between">
 
-                                        <div>
-                                            <p className="text-xs text-gray-400">
-                                                Submitted
-                                            </p>
+                                        <div className="grid gap-4 sm:grid-cols-2">
 
-                                            <p className="mt-1 text-sm text-gray-600">
-                                                {new Date(
-                                                    enquiry.createdAt
-                                                ).toLocaleString()}
-                                            </p>
+                                            <div>
+                                                <p className="text-xs text-gray-400">
+                                                    Submitted
+                                                </p>
+
+                                                <p className="mt-1 text-sm text-gray-600">
+                                                    {new Date(
+                                                        enquiry.createdAt
+                                                    ).toLocaleString()}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-gray-400">
+                                                    Last Updated
+                                                </p>
+
+                                                <p className="mt-1 text-sm text-gray-600">
+                                                    {new Date(
+                                                        enquiry.updatedAt
+                                                    ).toLocaleString()}
+                                                </p>
+                                            </div>
+
                                         </div>
 
-                                        <div>
-                                            <p className="text-xs text-gray-400">
-                                                Last Updated
-                                            </p>
-
-                                            <p className="mt-1 text-sm text-gray-600">
-                                                {new Date(
-                                                    enquiry.updatedAt
-                                                ).toLocaleString()}
-                                            </p>
-                                        </div>
+                                        <Link
+                                            href={`/dashboard/enquiries/${enquiry.id}`}
+                                            className="inline-flex items-center justify-center rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+                                        >
+                                            {enquiry.status === "CLOSED" ||
+                                                enquiry.status === "CANCELLED"
+                                                ? "View conversation"
+                                                : "Continue negotiation"}
+                                        </Link>
 
                                     </div>
 

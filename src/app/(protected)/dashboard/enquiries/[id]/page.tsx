@@ -36,10 +36,13 @@ export default function ConversationPage() {
 
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [closing, setClosing] = useState(false);
 
     const [error, setError] = useState<string | null>(
         null,
     );
+
+    const [closeError, setCloseError] = useState<string | null>(null)
 
     const [sendError, setSendError] = useState<
         string | null
@@ -125,7 +128,7 @@ export default function ConversationPage() {
 
                 setError(
                     error.message ||
-                        "Failed to load conversation",
+                    "Failed to load conversation",
                 );
             } finally {
                 setLoading(false);
@@ -202,10 +205,70 @@ export default function ConversationPage() {
 
             setSendError(
                 error.message ||
-                    "Failed to send message",
+                "Failed to send message",
             );
         } finally {
             setSending(false);
+        }
+    };
+
+    const closeNegotiation = async () => {
+        if (
+            !accessToken ||
+            !user ||
+            user.role !== "OWNER" ||
+            !enquiry ||
+            closing ||
+            enquiry.status === "CLOSED" ||
+            enquiry.status === "CANCELLED"
+        ) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            "Are you sure you want to close this negotiation?\n\n" +
+            "The conversation will remain available for viewing, " +
+            "but no new messages can be sent.",
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setClosing(true);
+            setCloseError(null);
+
+            await enquiryClient.updateStatus(
+                enquiry.id,
+                {
+                    status: "CLOSED",
+                },
+                accessToken,
+            );
+
+            setEnquiry((currentEnquiry) => {
+                if (!currentEnquiry) {
+                    return currentEnquiry;
+                }
+
+                return {
+                    ...currentEnquiry,
+                    status: "CLOSED",
+                };
+            });
+        } catch (error: any) {
+            console.error(
+                "Close negotiation error:",
+                error,
+            );
+
+            setCloseError(
+                error.message ||
+                "Failed to close negotiation",
+            );
+        } finally {
+            setClosing(false);
         }
     };
 
@@ -295,7 +358,7 @@ export default function ConversationPage() {
                                 "en-IN",
                             )}
                             {enquiry.property.purpose ===
-                            "RENT"
+                                "RENT"
                                 ? " / month"
                                 : ""}
                         </p>
@@ -311,15 +374,40 @@ export default function ConversationPage() {
             <div className="surface flex min-h-[600px] flex-col overflow-hidden rounded-[2rem]">
                 {/* Conversation Header */}
                 <div className="border-b border-[var(--border)] p-5">
-                    <p className="text-sm text-[var(--muted)]">
-                        Negotiation
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-[var(--muted)]">
+                                Negotiation
+                            </p>
 
-                    <p className="mt-1 font-semibold">
-                        {user?.role === "OWNER"
-                            ? "Interested User"
-                            : "Property Owner"}
-                    </p>
+                            <p className="mt-1 font-semibold">
+                                {user?.role === "OWNER"
+                                    ? "Interested User"
+                                    : "Property Owner"}
+                            </p>
+                        </div>
+
+                        {user?.role === "OWNER" &&
+                            enquiry.status !== "CLOSED" &&
+                            enquiry.status !== "CANCELLED" && (
+                                <button
+                                    type="button"
+                                    onClick={closeNegotiation}
+                                    disabled={closing}
+                                    className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--panel-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {closing
+                                        ? "Closing..."
+                                        : "Close negotiation"}
+                                </button>
+                            )}
+                    </div>
+
+                    {closeError && (
+                        <p className="mt-3 text-sm text-red-600">
+                            {closeError}
+                        </p>
+                    )}
                 </div>
 
                 {/* Messages */}
@@ -353,18 +441,16 @@ export default function ConversationPage() {
                             return (
                                 <div
                                     key={message.id}
-                                    className={`flex ${
-                                        isMine
-                                            ? "justify-end"
-                                            : "justify-start"
-                                    }`}
+                                    className={`flex ${isMine
+                                        ? "justify-end"
+                                        : "justify-start"
+                                        }`}
                                 >
                                     <div
-                                        className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-                                            isMine
-                                                ? "bg-[var(--brand)] text-white"
-                                                : "bg-[var(--panel-strong)]"
-                                        }`}
+                                        className={`max-w-[75%] rounded-2xl px-4 py-3 ${isMine
+                                            ? "bg-[var(--brand)] text-white"
+                                            : "bg-[var(--panel-strong)]"
+                                            }`}
                                     >
                                         {!isMine && (
                                             <p className="mb-1 text-xs font-medium">
@@ -383,11 +469,10 @@ export default function ConversationPage() {
                                         </p>
 
                                         <p
-                                            className={`mt-1 text-[11px] ${
-                                                isMine
-                                                    ? "text-white/70"
-                                                    : "text-[var(--muted)]"
-                                            }`}
+                                            className={`mt-1 text-[11px] ${isMine
+                                                ? "text-white/70"
+                                                : "text-[var(--muted)]"
+                                                }`}
                                         >
                                             {new Date(
                                                 message.createdAt,
