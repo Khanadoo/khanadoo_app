@@ -15,10 +15,53 @@ export interface MyPropertiesResponse {
 }
 
 export const propertyClient = {
-  getAll(page = 1, limit = 10) {
-    return apiFetch<PropertyListResponse>(
-      `/api/property?page=${page}&limit=${limit}`,
-    );
+  getAll(
+    page = 1,
+    limit = 10,
+    filters?: {
+      city?: string;
+      locality?: string;
+      type?: string;
+      purpose?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      sort?: string;
+    },
+  ) {
+    const params = new URLSearchParams();
+
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+
+    if (filters?.city) {
+      params.set("city", filters.city);
+    }
+
+    if (filters?.locality) {
+      params.set("locality", filters.locality);
+    }
+
+    if (filters?.type) {
+      params.set("type", filters.type);
+    }
+
+    if (filters?.purpose) {
+      params.set("purpose", filters.purpose);
+    }
+
+    if (filters?.minPrice !== undefined) {
+      params.set("minPrice", String(filters.minPrice));
+    }
+
+    if (filters?.maxPrice !== undefined) {
+      params.set("maxPrice", String(filters.maxPrice));
+    }
+
+    if (filters?.sort) {
+      params.set("sort", filters.sort);
+    }
+
+    return apiFetch<PropertyListResponse>(`/api/property?${params.toString()}`);
   },
 
   getById(id: string) {
