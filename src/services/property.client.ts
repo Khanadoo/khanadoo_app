@@ -101,6 +101,24 @@ export const propertyClient = {
     });
   },
 
+  updateStatus(
+    id: string,
+    status: "AVAILABLE" | "RENTED" | "SOLD",
+    accessToken: string,
+  ) {
+    return apiFetch<Property>(`/api/property/${id}`, {
+      method: "PUT",
+
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+
+      body: JSON.stringify({
+        status,
+      }),
+    });
+  },
+
   delete(id: string, accessToken: string) {
     return apiFetch(`/api/property/${id}`, {
       method: "DELETE",

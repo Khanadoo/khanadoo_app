@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import Link from "next/link";
-
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -16,7 +14,10 @@ import { propertyClient } from "@/services/property.client";
 
 import { useAuth } from "@/context/AuthContext";
 
-import PropertyForm, { PropertyFormValues } from "@/components/property/PropertyForm";
+import PropertyForm, {
+    PropertyFormValues,
+} from "@/components/property/PropertyForm";
+
 import { Modal } from "@/components/ui";
 
 export default function MyPropertiesPage() {
@@ -36,6 +37,9 @@ export default function MyPropertiesPage() {
 
     const [editingProperty, setEditingProperty] =
         useState<Property | null>(null);
+
+    const [updatingPropertyId, setUpdatingPropertyId] =
+        useState<string | null>(null);
 
     useEffect(() => {
         const loadProperties = async () => {
@@ -110,6 +114,49 @@ export default function MyPropertiesPage() {
         }
     };
 
+    const handleStatusUpdate = async (
+        property: Property
+    ) => {
+        if (!accessToken) return;
+
+        const newStatus =
+            property.purpose === "RENT"
+                ? "RENTED"
+                : "SOLD";
+
+        const confirmed = window.confirm(
+            `Mark "${property.title}" as ${newStatus.toLowerCase()}?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setUpdatingPropertyId(property.id);
+
+            const updatedProperty =
+                await propertyClient.updateStatus(
+                    property.id,
+                    newStatus,
+                    accessToken
+                );
+
+            setProperties((prev) =>
+                prev.map((p) =>
+                    p.id === updatedProperty.id
+                        ? updatedProperty
+                        : p
+                )
+            );
+        } catch (err: any) {
+            alert(
+                err.message ||
+                "Failed to update property status"
+            );
+        } finally {
+            setUpdatingPropertyId(null);
+        }
+    };
+
     const handleEdit = async (
         values: PropertyFormValues
     ) => {
@@ -158,6 +205,8 @@ export default function MyPropertiesPage() {
             <Navbar />
 
             <main className="mx-auto max-w-7xl px-6 py-10">
+
+                {/* Header */}
                 <div className="mb-8 flex items-center justify-between">
                     <h1 className="text-4xl font-bold">
                         My Properties
@@ -182,49 +231,118 @@ export default function MyPropertiesPage() {
                     </div>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+
                         {properties.map((property) => (
                             <div
                                 key={property.id}
                                 className="space-y-3"
                             >
+
                                 <PropertyCard
                                     property={property}
                                 />
 
+                                {/* Property Status */}
+                                <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3">
+
+                                    <span className="text-sm font-medium">
+                                        Status
+                                    </span>
+
+                                    <span
+                                        className={`rounded-full px-3 py-1 text-xs font-semibold ${property.status === "AVAILABLE"
+                                            ? "bg-green-100 text-green-700"
+                                            : property.status === "RENTED"
+                                                ? "bg-blue-100 text-blue-700"
+                                                : "bg-gray-200 text-gray-700"
+                                            }`}
+                                    >
+                                        {property.status === "AVAILABLE"
+                                            ? "Available"
+                                            : property.status === "RENTED"
+                                                ? "Rented"
+                                                : "Sold"}
+                                    </span>
+
+                                </div>
+
+                                {/* Lifecycle Action */}
+                                {property.status === "AVAILABLE" && (
+                                    <Button
+                                        size="md"
+                                        className="w-full"
+                                        variant="secondary"
+                                        disabled={
+                                            updatingPropertyId === property.id
+                                        }
+                                        onClick={() =>
+                                            handleStatusUpdate(property)
+                                        }
+                                    >
+                                        {updatingPropertyId === property.id
+                                            ? "Updating..."
+                                            : property.purpose === "RENT"
+                                                ? "Mark as Rented"
+                                                : "Mark as Sold"}
+                                    </Button>
+                                )}
+
+
+                                {/* Edit / Delete */}
                                 <div className="flex gap-2">
-                                    <Button size="md"
+
+                                    <Button
+                                        size="md"
                                         variant="secondary"
                                         className="w-full"
-                                        onClick={() => setEditingProperty(property)}
+                                        onClick={() =>
+                                            setEditingProperty(
+                                                property
+                                            )
+                                        }
                                     >
                                         Edit
                                     </Button>
 
-                                    <Button size="md"
+                                    <Button
+                                        size="md"
                                         variant="danger"
                                         className="flex-1"
-                                        onClick={() => handleDelete(property.id)}
+                                        onClick={() =>
+                                            handleDelete(
+                                                property.id
+                                            )
+                                        }
                                     >
                                         Delete
                                     </Button>
+
                                 </div>
+
                             </div>
                         ))}
+
                     </div>
                 )}
             </main>
 
             <Footer />
+
+            {/* Create Property Modal */}
             <Modal
                 open={showCreateModal}
                 title="Add property"
-                onClose={() => setShowCreateModal(false)}
+                onClose={() =>
+                    setShowCreateModal(false)
+                }
             >
                 <PropertyForm
                     submitLabel="Create Property"
                     onSubmit={handleCreateProperty}
                 />
             </Modal>
+
+            {/* Edit Property Modal */}
             <Modal
                 open={!!editingProperty}
                 title="Edit Property"
