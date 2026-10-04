@@ -44,6 +44,13 @@ enum UserStatus {
   BANNED
 }
 
+enum NotificationType {
+  NEW_ENQUIRY
+  NEW_MESSAGE
+  ENQUIRY_STATUS_CHANGED
+  PROPERTY_STATUS_CHANGED
+}
+
 model User {
   id       String  @id @default(uuid())
   name     String
@@ -61,6 +68,8 @@ model User {
   refreshTokens RefreshToken[]
 
   messages Message[]
+
+  notifications Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -148,5 +157,26 @@ model Message {
 
   @@index([enquiryId])
   @@index([senderId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+  link    String?
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, isRead])
   @@index([createdAt])
 }

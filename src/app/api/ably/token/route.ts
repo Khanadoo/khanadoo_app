@@ -31,16 +31,36 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    /*
-     * Get the enquiry ID requested by the client
-     */
     const enquiryId = req.nextUrl.searchParams.get("enquiryId");
 
+    const notifications = req.nextUrl.searchParams.get("notifications");
+
+    /*
+     * Notification realtime token
+     */
+    if (notifications === "true") {
+      const channelName = `user:${user.id}`;
+
+      const ably = new Ably.Rest(process.env.ABLY_API_KEY);
+
+      const tokenDetails = await ably.auth.requestToken({
+        clientId: user.id,
+        capability: JSON.stringify({
+          [channelName]: ["subscribe"],
+        }),
+      });
+
+      return Response.json(tokenDetails);
+    }
+
+    /*
+     * Enquiry realtime token
+     */
     if (!enquiryId) {
       return Response.json(
         {
           success: false,
-          error: "Enquiry ID is required",
+          error: "Enquiry ID or notification access is required",
         },
         { status: 400 },
       );
@@ -99,12 +119,10 @@ export async function GET(req: NextRequest) {
     const ably = new Ably.Rest(process.env.ABLY_API_KEY);
 
     /*
-     * The browser only needs to RECEIVE realtime
-     * events.
+     * The browser only receives realtime events.
      *
      * It does not get publish permission because
-     * messages are still created through our
-     * existing REST API.
+     * messages are still created through our REST API.
      */
     const tokenDetails = await ably.auth.requestToken({
       clientId: user.id,

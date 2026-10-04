@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { CreateMessageInput } from "./message.schema";
+import { createNotification } from "@/services/notifications.service";
 
 export const getMessages = async (enquiryId: string, userId: string) => {
   const enquiry = await prisma.enquiry.findUnique({
@@ -53,6 +54,7 @@ export const createMessage = async (
     where: {
       id: enquiryId,
     },
+
     include: {
       property: {
         select: {
@@ -83,6 +85,7 @@ export const createMessage = async (
       senderId,
       content: data.content,
     },
+
     include: {
       sender: {
         select: {
@@ -98,10 +101,32 @@ export const createMessage = async (
       where: {
         id: enquiryId,
       },
+
       data: {
         status: "NEGOTIATING",
       },
     });
+  }
+
+  /*
+   * Notify the other participant.
+   *
+   * USER sends  → OWNER receives
+   * OWNER sends → USER receives
+   */
+  const recipientId =
+    senderId === enquiry.userId ? enquiry.property.ownerId : enquiry.userId;
+
+  try {
+    await createNotification({
+      userId: recipientId,
+      type: "NEW_MESSAGE",
+      title: "New message",
+      message: `${message.sender.name} sent you a message.`,
+      link: `/enquiries/${enquiryId}`,
+    });
+  } catch (error) {
+    console.error("Failed to create message notification:", error);
   }
 
   return message;

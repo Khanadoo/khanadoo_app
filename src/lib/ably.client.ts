@@ -9,3 +9,13 @@ export const createAblyClient = (enquiryId: string, accessToken: string) => {
     },
   });
 };
+
+export const createNotificationAblyClient = (accessToken: string) => {
+  return new Ably.Realtime({
+    authUrl: "/api/ably/token?notifications=true",
+    authMethod: "GET",
+    authHeaders: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+};

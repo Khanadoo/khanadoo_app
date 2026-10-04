@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import NotificationDropdown from "@/components/notifications/NotificationDropDown";
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -75,6 +76,7 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
+                            <NotificationDropdown />
                             <Link
                                 href="/dashboard"
                                 className={cn(

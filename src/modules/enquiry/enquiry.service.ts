@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 
 import { CreateEnquiryInput, UpdateEnquiryInput } from "./enquiry.schema";
 
+import { createNotification } from "@/services/notifications.service";
+
 export const createEnquiry = async (
   userId: string,
   data: CreateEnquiryInput,
@@ -9,6 +11,14 @@ export const createEnquiry = async (
   const property = await prisma.property.findUnique({
     where: {
       id: data.propertyId,
+    },
+
+    include: {
+      owner: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
@@ -38,7 +48,7 @@ export const createEnquiry = async (
     throw new Error("You already have an active enquiry for this property");
   }
 
-  return prisma.enquiry.create({
+  const enquiry = await prisma.enquiry.create({
     data: {
       userId,
       propertyId: data.propertyId,
@@ -46,6 +56,20 @@ export const createEnquiry = async (
       message: data.message,
     },
   });
+
+  try {
+    await createNotification({
+      userId: property.owner.id,
+      type: "NEW_ENQUIRY",
+      title: "New enquiry",
+      message: "Someone has submitted an enquiry for your property.",
+      link: "/owner/enquiries",
+    });
+  } catch (error) {
+    console.error("Failed to create enquiry notification:", error);
+  }
+
+  return enquiry;
 };
 
 export const getUserEnquiries = async (userId: string) => {
@@ -128,7 +152,16 @@ export const updateEnquiryStatus = async (
     throw new Error("Enquiry not found");
   }
 
-  return prisma.enquiry.update({
+  /*
+   * If the status is already the requested status,
+   * there is nothing to update and no notification
+   * should be created.
+   */
+  if (enquiry.status === data.status) {
+    return enquiry;
+  }
+
+  const updated = await prisma.enquiry.update({
     where: {
       id: enquiryId,
     },
@@ -137,4 +170,35 @@ export const updateEnquiryStatus = async (
       status: data.status,
     },
   });
+
+  /*
+   * Notify the user who submitted the enquiry.
+   *
+   * At the moment, only OWNER/ADMIN can change
+   * enquiry status, so the enquiry user is the
+   * other participant.
+   */
+  try {
+    const statusLabels: Record<string, string> = {
+      PENDING: "Pending",
+      CONTACTED: "Contacted",
+      NEGOTIATING: "Negotiating",
+      CLOSED: "Closed",
+      CANCELLED: "Cancelled",
+    };
+
+    const statusLabel = statusLabels[updated.status] || updated.status;
+
+    await createNotification({
+      userId: enquiry.userId,
+      type: "ENQUIRY_STATUS_CHANGED",
+      title: "Enquiry status updated",
+      message: `Your enquiry status is now ${statusLabel}.`,
+      link: `/enquiries`,
+    });
+  } catch (error) {
+    console.error("Failed to create enquiry status notification:", error);
+  }
+
+  return updated;
 };

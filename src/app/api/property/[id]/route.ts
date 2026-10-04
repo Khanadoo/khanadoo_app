@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/middleware/role.middleware";
-import { success } from "zod";
+import { createNotification } from "@/services/notifications.service";
 
 export async function GET(
   req: Request,
@@ -95,6 +95,47 @@ export async function PUT(
       updateData.verified = body.verified;
     }
 
+    /*
+     * Check whether the property status is actually changing.
+     *
+     * This is important because the same PUT endpoint is also
+     * used for normal property editing.
+     */
+    const statusChanged =
+      body.status !== undefined && body.status !== existingProperty.status;
+
+    /*
+     * Find users who currently have an active enquiry
+     * for this property.
+     *
+     * These are the users who should know that the property's
+     * availability has changed.
+     */
+    let interestedUserIds: string[] = [];
+
+    if (statusChanged) {
+      const activeEnquiries = await prisma.enquiry.findMany({
+        where: {
+          propertyId: id,
+          status: {
+            in: ["PENDING", "CONTACTED", "NEGOTIATING"],
+          },
+        },
+
+        select: {
+          userId: true,
+        },
+      });
+
+      /*
+       * Remove duplicate user IDs in case a user somehow has
+       * multiple active enquiries for the same property.
+       */
+      interestedUserIds = [
+        ...new Set(activeEnquiries.map((enquiry) => enquiry.userId)),
+      ];
+    }
+
     const updatedProperty = await prisma.property.update({
       where: { id },
       data: {
@@ -102,11 +143,49 @@ export async function PUT(
       },
     });
 
+    /*
+     * Notify interested users only when the property status
+     * actually changed.
+     */
+    if (statusChanged && interestedUserIds.length > 0) {
+      const statusLabels: Record<string, string> = {
+        AVAILABLE: "available",
+        RENTED: "rented",
+        SOLD: "sold",
+      };
+
+      const statusLabel =
+        statusLabels[updatedProperty.status] ||
+        updatedProperty.status.toLowerCase();
+
+      await Promise.all(
+        interestedUserIds.map(async (userId) => {
+          try {
+            await createNotification({
+              userId,
+              type: "PROPERTY_STATUS_CHANGED",
+              title: "Property status updated",
+              message: `"${existingProperty.title}" has been marked as ${statusLabel}.`,
+              link: `/property/${updatedProperty.id}`,
+            });
+          } catch (error) {
+            console.error(
+              `Failed to notify user ${userId} about property status change:`,
+              error,
+            );
+          }
+        }),
+      );
+    }
+
     return Response.json(updatedProperty);
   } catch (error) {
     console.error("Error updating property:", error);
+
     return new Response(
-      JSON.stringify({ error: "Failed to update property" }),
+      JSON.stringify({
+        error: "Failed to update property",
+      }),
       { status: 500 },
     );
   }
@@ -137,10 +216,7 @@ export async function DELETE(
       });
     }
 
-    if (
-      auth.user.role !== "ADMIN" &&
-      property.ownerId !== auth.user.id
-    ) {
+    if (auth.user.role !== "ADMIN" && property.ownerId !== auth.user.id) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 403,
       });
