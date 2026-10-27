@@ -63,6 +63,8 @@ model User {
 
   enquiries Enquiry[]
 
+  favorites Favorite[]
+
   properties Property[] @relation("OwnerProperties")
 
   refreshTokens RefreshToken[]
@@ -116,6 +118,8 @@ model Property {
   isActive Boolean @default(true)
 
   enquiries Enquiry[]
+
+  favorites Favorite[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,4 +183,21 @@ model Notification {
   @@index([userId])
   @@index([userId, isRead])
   @@index([createdAt])
+}
+
+
+model Favorite {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@index([userId, createdAt])
+  @@index([propertyId])
 }

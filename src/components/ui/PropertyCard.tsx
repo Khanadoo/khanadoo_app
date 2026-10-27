@@ -1,5 +1,6 @@
 import { Property } from "@/types/property";
 import Badge from "../ui/Badge";
+import FavoriteButton from "./FavoriteButton";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
@@ -13,14 +14,20 @@ export default function PropertyCard({
     return (
         <Link href={`/properties/${property.id}`}>
             <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-                <img
-                    src={
-                        property.imageUrls[0] ??
-                        "/placeholder-property.jpg"
-                    }
-                    alt={property.title}
-                    className="h-52 w-full object-cover"
-                />
+                <div className="relative">
+                    <img
+                        src={
+                            property.imageUrls[0] ??
+                            "/placeholder-property.jpg"
+                        }
+                        alt={property.title}
+                        className="h-52 w-full object-cover"
+                    />
+
+                    <div className="absolute right-3 top-3 z-10">
+                        <FavoriteButton propertyId={property.id} />
+                    </div>
+                </div>
 
                 <div className="space-y-3 p-4">
                     <div className="flex justify-between">
