@@ -127,7 +127,7 @@ export default function DashboardPage() {
             } catch (err: any) {
                 setError(
                     err.message ||
-                        "Failed to load dashboard",
+                    "Failed to load dashboard",
                 );
             } finally {
                 setLoading(false);
@@ -229,6 +229,60 @@ export default function DashboardPage() {
                 }
             />
 
+            <section className="surface rounded-[2rem] p-5 sm:p-6">
+                <h2 className="text-lg font-semibold">
+                    What would you like to do?
+                </h2>
+
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                    Quick access to your most important actions.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                    {user.role === "OWNER" ? (
+                        <>
+                            <Link
+                                href="/properties/new"
+                                className="inline-flex items-center justify-center rounded-full bg-[var(--brand)] px-5 py-3 text-sm font-medium text-white transition hover:bg-[var(--brand-deep)]"
+                            >
+                                <span className="mr-2 text-lg">+</span>
+                                Add Property
+                            </Link>
+
+                            <Link
+                                href="/owner/enquiries"
+                                className="inline-flex items-center justify-center rounded-full border border-[var(--line)] px-5 py-3 text-sm font-medium transition hover:bg-[var(--panel-strong)]"
+                            >
+                                Manage Enquiries
+                            </Link>
+
+                            <Link
+                                href="/owner/properties"
+                                className="inline-flex items-center justify-center rounded-full border border-[var(--line)] px-5 py-3 text-sm font-medium transition hover:bg-[var(--panel-strong)]"
+                            >
+                                My Properties
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link
+                                href="/properties"
+                                className="inline-flex items-center justify-center rounded-full bg-[var(--brand)] px-5 py-3 text-sm font-medium text-white transition hover:bg-[var(--brand-deep)]"
+                            >
+                                Browse Properties
+                            </Link>
+
+                            <Link
+                                href="/enquiries"
+                                className="inline-flex items-center justify-center rounded-full border border-[var(--line)] px-5 py-3 text-sm font-medium transition hover:bg-[var(--panel-strong)]"
+                            >
+                                My Enquiries
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </section>
+
             {user.role === "OWNER" ? (
                 <OwnerDashboard
                     properties={properties}
@@ -264,28 +318,41 @@ function UserDashboard({
         enquiries.slice(0, 5);
 
     return (
-        <div className="space-y-8">
+        <div className="mt-8 space-y-8 sm:mt-10">
+
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                     label="Total Enquiries"
                     value={stats.total}
+                    description="All property enquiries you've submitted."
+                    icon="▤"
                 />
 
                 <StatCard
                     label="Pending"
                     value={stats.pending}
+                    description="Waiting for the owner to respond."
+                    icon="◷"
+                    accent="text-amber-700 bg-amber-50"
                 />
 
                 <StatCard
                     label="Active"
                     value={stats.active}
+                    description="Enquiries with ongoing communication."
+                    icon="↔"
+                    accent="text-blue-700 bg-blue-50"
                 />
 
                 <StatCard
                     label="Closed"
                     value={stats.closed}
+                    description="Enquiries marked as completed."
+                    icon="✓"
+                    accent="text-emerald-700 bg-emerald-50"
                 />
             </section>
+
 
             <section className="surface rounded-[2rem] p-6">
                 <div className="flex items-center justify-between gap-4">
@@ -391,36 +458,40 @@ function OwnerDashboard({
         properties.slice(0, 4);
 
     return (
-        <div className="space-y-8">
+        <div className="mt-8 space-y-8 sm:mt-10">
+
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                     label="My Properties"
-                    value={
-                        stats.totalProperties
-                    }
+                    value={stats.totalProperties}
+                    description="Total properties in your listings."
+                    icon="⌂"
                 />
 
                 <StatCard
                     label="Available"
-                    value={
-                        stats.availableProperties
-                    }
+                    value={stats.availableProperties}
+                    description="Properties currently available to users."
+                    icon="✓"
+                    accent="text-emerald-700 bg-emerald-50"
                 />
 
                 <StatCard
                     label="Total Enquiries"
-                    value={
-                        stats.totalEnquiries
-                    }
+                    value={stats.totalEnquiries}
+                    description="Interest received across your properties."
+                    icon="▤"
                 />
 
                 <StatCard
                     label="Pending Enquiries"
-                    value={
-                        stats.pendingEnquiries
-                    }
+                    value={stats.pendingEnquiries}
+                    description="Enquiries awaiting your response."
+                    icon="◷"
+                    accent="text-amber-700 bg-amber-50"
                 />
             </section>
+
 
             <section className="surface rounded-[2rem] p-6">
                 <div className="flex items-center justify-between gap-4">
@@ -531,27 +602,50 @@ function OwnerDashboard({
     );
 }
 
+
 interface StatCardProps {
     label: string;
     value: number;
+    description: string;
+    icon: string;
+    accent?: string;
 }
 
 function StatCard({
     label,
     value,
+    description,
+    icon,
+    accent = "text-[var(--brand-deep)] bg-[var(--panel-strong)]",
 }: StatCardProps) {
     return (
-        <div className="surface rounded-[2rem] p-5">
-            <p className="text-sm text-[var(--muted)]">
-                {label}
-            </p>
+        <div className="surface rounded-[2rem] p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-sm font-medium text-[var(--muted)]">
+                        {label}
+                    </p>
 
-            <p className="mt-3 text-3xl font-semibold tracking-tight">
-                {value}
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                        {value}
+                    </p>
+                </div>
+
+                <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl ${accent}`}
+                    aria-hidden="true"
+                >
+                    {icon}
+                </div>
+            </div>
+
+            <p className="mt-4 border-t border-[var(--line)] pt-3 text-sm leading-6 text-[var(--muted)]">
+                {description}
             </p>
         </div>
     );
 }
+
 
 interface EnquiryRowProps {
     title: string;
