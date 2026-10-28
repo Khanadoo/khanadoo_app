@@ -1,10 +1,15 @@
+
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Khanadoo",
-  description: "Campus food, delivered smarter.",
+  title: {
+    default: "PropertyHub | Find Your Next Home",
+    template: "%s | PropertyHub",
+  },
+  description:
+    "Explore properties for rent and sale, review listing details, and connect with property owners through PropertyHub.",
 };
 
 export default function RootLayout({
@@ -13,14 +18,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      data-scroll-behavior="smooth"
-      className="h-full scroll-smooth antialiased"
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full bg-[var(--background)] text-[var(--foreground)]">
         <div className="relative flex min-h-screen flex-col">
-          <main className="flex-1"><AuthProvider>{children}</AuthProvider></main>
+          <main className="flex-1">
+            <AuthProvider>{children}</AuthProvider>
+          </main>
         </div>
       </body>
     </html>
