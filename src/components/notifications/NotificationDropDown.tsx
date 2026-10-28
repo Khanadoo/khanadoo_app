@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createNotificationAblyClient } from "@/lib/ably.client";
 
 export default function NotificationDropdown() {
-    const { user, accessToken } = useAuth();
+    const { user, accessToken, refreshSession } = useAuth();
     const router = useRouter();
 
     const [notifications, setNotifications] = useState<
@@ -81,6 +81,7 @@ export default function NotificationDropdown() {
 
         const ably = createNotificationAblyClient(
             accessToken,
+            refreshSession,
         );
 
         const channel = ably.channels.get(
@@ -125,7 +126,7 @@ export default function NotificationDropdown() {
                 ably.close();
             }
         };
-    }, [accessToken, user?.id]);
+    }, [accessToken, user?.id, refreshSession]);
 
     const handleNotificationClick = async (
         notification: Notification,

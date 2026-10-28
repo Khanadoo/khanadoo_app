@@ -27,7 +27,7 @@ export default function ConversationPage() {
     const params = useParams();
     const router = useRouter();
 
-    const { user, accessToken, loading: authLoading } =
+    const { user, accessToken, loading: authLoading, refreshSession } =
         useAuth();
 
     const enquiryId = params.id as string;
@@ -165,7 +165,7 @@ export default function ConversationPage() {
         const setupRealtime = async () => {
             try {
                 const ably =
-                    createAblyClient(enquiryId, accessToken);
+                    createAblyClient(enquiryId, accessToken, refreshSession);
 
                 ablyRef.current = ably;
 
@@ -286,6 +286,7 @@ export default function ConversationPage() {
         accessToken,
         user?.id,
         enquiryId,
+        refreshSession
     ]);
 
     const sendMessage = async () => {

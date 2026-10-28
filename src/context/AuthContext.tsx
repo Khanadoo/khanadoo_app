@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { authClient, AuthUser } from "@/services/auth.client";
 
 interface AuthContextType {
@@ -24,7 +24,7 @@ interface AuthContextType {
 
     logout: () => Promise<void>;
 
-    refreshSession: () => Promise<void>;
+    refreshSession: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -69,34 +69,54 @@ export function AuthProvider({
     };
 
     const logout = async () => {
-        try{
-            await authClient.logout();
-        } finally{
-            setUser(null);
-            setAccessToken(null);
-        }
-    };
-
-    const refreshSession = async () => {
         try {
-            const refreshResponse = await authClient.refresh();
-
-            const newAccessToken = refreshResponse.accessToken;
-
-            setAccessToken(newAccessToken);
-
-            const meResponse = await authClient.me(newAccessToken);
-
-            setUser(meResponse.user);
-        } catch{
+            await authClient.logout();
+        } finally {
             setUser(null);
             setAccessToken(null);
-        } finally{
-            setLoading(false);
         }
     };
 
-    useEffect(()=>{
+    const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+
+    const refreshSession = useCallback((): Promise<string | null> => {
+        if (refreshPromiseRef.current) {
+            return refreshPromiseRef.current;
+        }
+
+        const refreshPromise = (async (): Promise<string | null> => {
+            try {
+                const refreshResponse = await authClient.refresh();
+                const newAccessToken = refreshResponse.accessToken;
+
+                const meResponse = await authClient.me(newAccessToken);
+
+                setAccessToken(newAccessToken);
+                setUser(meResponse.user);
+
+                return newAccessToken;
+            } catch {
+                setUser(null);
+                setAccessToken(null);
+
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        })();
+
+        refreshPromiseRef.current = refreshPromise;
+
+        void refreshPromise.finally(() => {
+            if (refreshPromiseRef.current === refreshPromise) {
+                refreshPromiseRef.current = null;
+            }
+        });
+
+        return refreshPromise;
+    }, []);
+
+    useEffect(() => {
         refreshSession();
     }, []);
 
@@ -107,7 +127,7 @@ export function AuthProvider({
         isAuthenticated:
             !!user &&
             !!accessToken,
-        
+
         loading,
 
         login,
