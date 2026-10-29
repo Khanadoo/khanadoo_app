@@ -29,10 +29,6 @@ const ownerLinks = [
         label: "My Properties",
         href: "/owner/properties",
     },
-    {
-        label: "Add Property",
-        href: "/properties/new",
-    },
 ];
 
 export function Sidebar() {
