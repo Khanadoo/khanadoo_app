@@ -19,6 +19,10 @@ const commonLinks = [
         href: "/dashboard/enquiries",
     },
     {
+        label: "Favorites",
+        href: "/favorites",
+    },
+    {
         label: "Profile",
         href: "/profile",
     },
@@ -43,6 +47,7 @@ export function Sidebar() {
                 ...ownerLinks,
                 commonLinks[2],
                 commonLinks[3],
+                commonLinks[4],
             ]
             : commonLinks;
 
