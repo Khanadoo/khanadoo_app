@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -20,15 +21,18 @@ import {
 } from "@/types/enquiry";
 
 import * as Ably from "ably";
-
 import { createAblyClient } from "@/lib/ably.client";
 
 export default function ConversationPage() {
     const params = useParams();
     const router = useRouter();
 
-    const { user, accessToken, loading: authLoading, refreshSession } =
-        useAuth();
+    const {
+        user,
+        accessToken,
+        loading: authLoading,
+        refreshSession,
+    } = useAuth();
 
     const enquiryId = params.id as string;
 
@@ -42,23 +46,16 @@ export default function ConversationPage() {
     const [sending, setSending] = useState(false);
     const [closing, setClosing] = useState(false);
 
-    const [error, setError] = useState<string | null>(
-        null,
-    );
-
-    const [closeError, setCloseError] = useState<string | null>(null)
-
-    const [sendError, setSendError] = useState<
-        string | null
-    >(null);
+    const [error, setError] = useState<string | null>(null);
+    const [closeError, setCloseError] = useState<string | null>(null);
+    const [sendError, setSendError] = useState<string | null>(null);
 
     const [newMessage, setNewMessage] = useState("");
 
-    const messagesEndRef = useRef<HTMLDivElement | null>(
-        null,
-    );
-
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const ablyRef = useRef<Ably.Realtime | null>(null);
+
+    const isOwner = user?.role === "OWNER";
 
     const isConversationClosed =
         enquiry?.status === "CLOSED" ||
@@ -68,6 +65,51 @@ export default function ConversationPage() {
         messagesEndRef.current?.scrollIntoView({
             behavior: "smooth",
         });
+    };
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0,
+        }).format(price);
+    };
+
+    const formatMessageTime = (date: string | Date) => {
+        return new Date(date).toLocaleTimeString("en-IN", {
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    };
+
+    const formatMessageDate = (date: string | Date) => {
+        return new Date(date).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
+    const getStatusClasses = (status: string) => {
+        switch (status) {
+            case "PENDING":
+                return "bg-amber-100 text-amber-800";
+
+            case "CONTACTED":
+                return "bg-blue-100 text-blue-800";
+
+            case "NEGOTIATING":
+                return "bg-violet-100 text-violet-800";
+
+            case "CLOSED":
+                return "bg-emerald-100 text-emerald-800";
+
+            case "CANCELLED":
+                return "bg-red-100 text-red-800";
+
+            default:
+                return "bg-[var(--panel-strong)] text-[var(--muted)]";
+        }
     };
 
     useEffect(() => {
@@ -86,33 +128,25 @@ export default function ConversationPage() {
                     | undefined;
 
                 if (user.role === "OWNER") {
-                    const response =
-                        await enquiryClient.getOwner(
-                            accessToken,
-                        );
+                    const response = await enquiryClient.getOwner(
+                        accessToken,
+                    );
 
-                    currentEnquiry =
-                        response.enquiries.find(
-                            (item) =>
-                                item.id === enquiryId,
-                        );
+                    currentEnquiry = response.enquiries.find(
+                        (item) => item.id === enquiryId,
+                    );
                 } else {
-                    const response =
-                        await enquiryClient.getMine(
-                            accessToken,
-                        );
+                    const response = await enquiryClient.getMine(
+                        accessToken,
+                    );
 
-                    currentEnquiry =
-                        response.enquiries.find(
-                            (item) =>
-                                item.id === enquiryId,
-                        );
+                    currentEnquiry = response.enquiries.find(
+                        (item) => item.id === enquiryId,
+                    );
                 }
 
                 if (!currentEnquiry) {
-                    throw new Error(
-                        "Enquiry not found",
-                    );
+                    throw new Error("Enquiry not found");
                 }
 
                 setEnquiry(currentEnquiry);
@@ -123,18 +157,12 @@ export default function ConversationPage() {
                         accessToken,
                     );
 
-                setMessages(
-                    messageResponse.messages,
-                );
+                setMessages(messageResponse.messages);
             } catch (error: any) {
-                console.error(
-                    "Load conversation error:",
-                    error,
-                );
+                console.error("Load conversation error:", error);
 
                 setError(
-                    error.message ||
-                    "Failed to load conversation",
+                    error.message || "Failed to load conversation",
                 );
             } finally {
                 setLoading(false);
@@ -142,12 +170,7 @@ export default function ConversationPage() {
         };
 
         loadConversation();
-    }, [
-        authLoading,
-        accessToken,
-        user,
-        enquiryId,
-    ]);
+    }, [authLoading, accessToken, user, enquiryId]);
 
     useEffect(() => {
         if (!loading) {
@@ -164,15 +187,17 @@ export default function ConversationPage() {
 
         const setupRealtime = async () => {
             try {
-                const ably =
-                    createAblyClient(enquiryId, accessToken, refreshSession);
+                const ably = createAblyClient(
+                    enquiryId,
+                    accessToken,
+                    refreshSession,
+                );
 
                 ablyRef.current = ably;
 
-                const channel =
-                    ably.channels.get(
-                        `enquiry:${enquiryId}`,
-                    );
+                const channel = ably.channels.get(
+                    `enquiry:${enquiryId}`,
+                );
 
                 await channel.subscribe(
                     "message.created",
@@ -181,65 +206,49 @@ export default function ConversationPage() {
                             return;
                         }
 
-                        const data =
-                            message.data as {
-                                message?: Message;
-                            };
+                        const data = message.data as {
+                            message?: Message;
+                        };
 
-                        const incomingMessage =
-                            data?.message;
+                        const incomingMessage = data?.message;
 
                         if (!incomingMessage) {
                             return;
                         }
 
-                        setMessages(
-                            (currentMessages) => {
-                                const alreadyExists =
-                                    currentMessages.some(
-                                        (item) =>
-                                            item.id ===
-                                            incomingMessage.id,
-                                    );
+                        setMessages((currentMessages) => {
+                            const alreadyExists = currentMessages.some(
+                                (item) => item.id === incomingMessage.id,
+                            );
 
-                                if (
-                                    alreadyExists
-                                ) {
-                                    return currentMessages;
-                                }
-
-                                return [
-                                    ...currentMessages,
-                                    incomingMessage,
-                                ];
-                            },
-                        );
-                    },
-                );
-
-                channel.subscribe(
-                    "enquiry.updated",
-                    (message) => {
-                        const updatedEnquiry =
-                            message.data?.enquiry;
-
-                        if (!updatedEnquiry) {
-                            return;
-                        }
-
-                        setEnquiry((currentEnquiry) => {
-                            if (!currentEnquiry) {
-                                return currentEnquiry;
+                            if (alreadyExists) {
+                                return currentMessages;
                             }
 
-                            return {
-                                ...currentEnquiry,
-                                status: updatedEnquiry.status,
-                                updatedAt: updatedEnquiry.updatedAt,
-                            };
+                            return [...currentMessages, incomingMessage];
                         });
                     },
                 );
+
+                channel.subscribe("enquiry.updated", (message) => {
+                    const updatedEnquiry = message.data?.enquiry;
+
+                    if (!updatedEnquiry) {
+                        return;
+                    }
+
+                    setEnquiry((currentEnquiry) => {
+                        if (!currentEnquiry) {
+                            return currentEnquiry;
+                        }
+
+                        return {
+                            ...currentEnquiry,
+                            status: updatedEnquiry.status,
+                            updatedAt: updatedEnquiry.updatedAt,
+                        };
+                    });
+                });
 
                 if (active) {
                     console.log(
@@ -252,10 +261,7 @@ export default function ConversationPage() {
                     return;
                 }
 
-                console.error(
-                    "Ably subscription error:",
-                    error,
-                );
+                console.error("Ably subscription error:", error);
             }
         };
 
@@ -264,30 +270,22 @@ export default function ConversationPage() {
         return () => {
             active = false;
 
-            const ably =
-                ablyRef.current;
+            const ably = ablyRef.current;
 
             if (!ably) {
                 return;
             }
 
-            const channel =
-                ably.channels.get(
-                    `enquiry:${enquiryId}`,
-                );
+            const channel = ably.channels.get(
+                `enquiry:${enquiryId}`,
+            );
 
             channel.unsubscribe();
-
             ably.close();
 
             ablyRef.current = null;
         };
-    }, [
-        accessToken,
-        user?.id,
-        enquiryId,
-        refreshSession
-    ]);
+    }, [accessToken, user?.id, enquiryId, refreshSession]);
 
     const sendMessage = async () => {
         const content = newMessage.trim();
@@ -306,37 +304,28 @@ export default function ConversationPage() {
             setSending(true);
             setSendError(null);
 
-            const response =
-                await messageClient.sendMessage(
-                    enquiryId,
-                    { content },
-                    accessToken,
-                );
+            const response = await messageClient.sendMessage(
+                enquiryId,
+                { content },
+                accessToken,
+            );
 
             setMessages((currentMessages) => {
-                const alreadyExists =
-                    currentMessages.some(
-                        (item) =>
-                            item.id === response.message.id,
-                    );
+                const alreadyExists = currentMessages.some(
+                    (item) => item.id === response.message.id,
+                );
 
                 if (alreadyExists) {
                     return currentMessages;
                 }
 
-                return [
-                    ...currentMessages,
-                    response.message,
-                ];
+                return [...currentMessages, response.message];
             });
 
             setNewMessage("");
 
-            /*
-             * The backend automatically changes the
-             * enquiry status to NEGOTIATING when the
-             * first message is sent.
-             */
+            // The backend changes the enquiry status to NEGOTIATING
+            // when the first message is sent.
             setEnquiry((currentEnquiry) => {
                 if (!currentEnquiry) {
                     return currentEnquiry;
@@ -348,14 +337,10 @@ export default function ConversationPage() {
                 };
             });
         } catch (error: any) {
-            console.error(
-                "Send message error:",
-                error,
-            );
+            console.error("Send message error:", error);
 
             setSendError(
-                error.message ||
-                "Failed to send message",
+                error.message || "Failed to send message",
             );
         } finally {
             setSending(false);
@@ -408,14 +393,10 @@ export default function ConversationPage() {
                 };
             });
         } catch (error: any) {
-            console.error(
-                "Close negotiation error:",
-                error,
-            );
+            console.error("Close negotiation error:", error);
 
             setCloseError(
-                error.message ||
-                "Failed to close negotiation",
+                error.message || "Failed to close negotiation",
             );
         } finally {
             setClosing(false);
@@ -425,12 +406,8 @@ export default function ConversationPage() {
     const handleMessageKeyDown = (
         event: React.KeyboardEvent<HTMLTextAreaElement>,
     ) => {
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
+        if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-
             sendMessage();
         }
     };
@@ -438,31 +415,54 @@ export default function ConversationPage() {
     if (authLoading || loading) {
         return (
             <div className="flex min-h-[60vh] items-center justify-center">
-                <p className="text-sm text-[var(--muted)]">
-                    Loading conversation...
-                </p>
+                <div className="text-center">
+                    <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--brand)]" />
+
+                    <p className="text-sm font-medium text-[var(--muted)]">
+                        Loading conversation...
+                    </p>
+                </div>
             </div>
         );
     }
 
     if (error || !enquiry) {
         return (
-            <div className="surface rounded-[2rem] p-8">
-                <h1 className="font-display text-2xl font-semibold">
+            <div className="surface rounded-[2rem] border border-[var(--line)] p-8 sm:p-10">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="h-6 w-6"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                    >
+                        <path
+                            d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3l-7.5-13.1a2 2 0 0 0-3.4 0Z"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                </div>
+
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                    Something went wrong
+                </p>
+
+                <h1 className="mt-2 font-display text-2xl font-semibold">
                     Conversation unavailable
                 </h1>
 
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                    {error ||
-                        "Enquiry not found."}
+                <p className="mt-2 max-w-md text-sm leading-6 text-[var(--muted)]">
+                    {error || "Enquiry not found."}
                 </p>
 
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="mt-6 rounded-2xl bg-[var(--brand)] px-5 py-3 text-sm font-medium text-white"
+                    className="mt-7 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                 >
-                    Go Back
+                    Go back to enquiries
                 </button>
             </div>
         );
@@ -470,170 +470,313 @@ export default function ConversationPage() {
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
+            {/* Page heading */}
             <div>
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+                    className="group inline-flex items-center gap-2 text-sm font-medium text-[var(--muted)] transition hover:text-[var(--foreground)]"
                 >
-                    ← Back to enquiries
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="h-4 w-4 transition-transform group-hover:-translate-x-1"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                    >
+                        <path
+                            d="m15 18-6-6 6-6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                    Back to enquiries
                 </button>
 
-                <h1 className="mt-4 font-display text-3xl font-semibold">
-                    {enquiry.property.title}
-                </h1>
-
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                    {enquiry.property.locality},{" "}
-                    {enquiry.property.city}
-                </p>
-            </div>
-
-            {/* Property Summary */}
-            <div className="surface rounded-[2rem] p-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <p className="text-sm text-[var(--muted)]">
-                            Property
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">
+                            Your conversations
                         </p>
 
-                        <p className="mt-1 text-lg font-semibold">
-                            {enquiry.property.title}
-                        </p>
+                        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                            Conversation
+                        </h1>
 
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                            ₹
-                            {enquiry.property.price.toLocaleString(
-                                "en-IN",
-                            )}
-                            {enquiry.property.purpose ===
-                                "RENT"
-                                ? " / month"
-                                : ""}
+                        <p className="mt-2 text-sm text-[var(--muted)]">
+                            Discuss the property and keep your negotiation
+                            in one place.
                         </p>
                     </div>
 
-                    <span className="rounded-full bg-[var(--panel-strong)] px-4 py-2 text-sm font-medium">
-                        {enquiry.status}
+                    <span
+                        className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold ${getStatusClasses(enquiry.status)}`}
+                    >
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        {enquiry.status.replace("_", " ")}
                     </span>
                 </div>
             </div>
 
-            {/* Conversation */}
-            <div className="surface flex min-h-[600px] flex-col overflow-hidden rounded-[2rem]">
-                {/* Conversation Header */}
-                <div className="border-b border-[var(--border)] p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <p className="text-sm text-[var(--muted)]">
-                                Negotiation
-                            </p>
-
-                            <p className="mt-1 font-semibold">
-                                {user?.role === "OWNER"
-                                    ? "Interested User"
-                                    : "Property Owner"}
-                            </p>
+            {/* Property overview */}
+            <section className="surface overflow-hidden rounded-[1.75rem] border border-[var(--line)]">
+                <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div className="flex min-w-0 items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--panel-strong)] text-[var(--brand)]">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                className="h-6 w-6"
+                                stroke="currentColor"
+                                strokeWidth="1.7"
+                            >
+                                <path
+                                    d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
                         </div>
 
-                        {user?.role === "OWNER" &&
-                            enquiry.status !== "CLOSED" &&
-                            enquiry.status !== "CANCELLED" && (
-                                <button
-                                    type="button"
-                                    onClick={closeNegotiation}
-                                    disabled={closing}
-                                    className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--panel-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                        <div className="min-w-0">
+                            <p className="text-xs font-medium text-[var(--muted)]">
+                                Property enquiry
+                            </p>
+
+                            <h2 className="mt-1 truncate font-display text-lg font-semibold">
+                                {enquiry.property.title}
+                            </h2>
+
+                            <p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--muted)]">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    className="h-4 w-4 shrink-0"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
                                 >
-                                    {closing
-                                        ? "Closing..."
-                                        : "Close negotiation"}
-                                </button>
-                            )}
+                                    <path
+                                        d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                    <circle cx="12" cy="10" r="2.2" />
+                                </svg>
+                                <span className="truncate">
+                                    {enquiry.property.locality},{" "}
+                                    {enquiry.property.city}
+                                </span>
+                            </p>
+                        </div>
                     </div>
 
-                    {closeError && (
-                        <p className="mt-3 text-sm text-red-600">
-                            {closeError}
-                        </p>
-                    )}
+                    <div className="flex flex-wrap items-center gap-5 border-t border-[var(--line)] pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                        <div>
+                            <p className="text-xs text-[var(--muted)]">
+                                Asking price
+                            </p>
+
+                            <p className="mt-1 font-display text-xl font-semibold">
+                                {formatPrice(enquiry.property.price)}
+                            </p>
+
+                            {enquiry.property.purpose === "RENT" && (
+                                <p className="text-xs text-[var(--muted)]">
+                                    per month
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="rounded-xl bg-[var(--panel-strong)] px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                                Purpose
+                            </p>
+
+                            <p className="mt-0.5 text-sm font-semibold">
+                                {enquiry.property.purpose}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Chat workspace */}
+            <section className="surface flex min-h-[650px] flex-col overflow-hidden rounded-[1.75rem] border border-[var(--line)]">
+                {/* Chat top bar */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--line)] px-5 py-4 sm:px-6">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--panel-strong)] text-sm font-semibold text-[var(--brand)]">
+                            {isOwner ? "U" : "O"}
+                        </div>
+
+                        <div>
+                            <p className="text-sm font-semibold">
+                                {isOwner
+                                    ? "Interested user"
+                                    : "Property owner"}
+                            </p>
+
+                            <p className="mt-0.5 text-xs text-[var(--muted)]">
+                                {isConversationClosed
+                                    ? "Conversation closed"
+                                    : "Property discussion"}
+                            </p>
+                        </div>
+                    </div>
+
+                    {isOwner &&
+                        !isConversationClosed && (
+                            <button
+                                type="button"
+                                onClick={closeNegotiation}
+                                disabled={closing}
+                                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {closing ? (
+                                    <>
+                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                        Closing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            className="h-4 w-4"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                        >
+                                            <path
+                                                d="M6 6l12 12M18 6 6 18"
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                        Close negotiation
+                                    </>
+                                )}
+                            </button>
+                        )}
                 </div>
 
-                {/* Messages */}
-                <div className="flex-1 space-y-4 overflow-y-auto p-6">
-                    {/* Original Enquiry */}
-                    {enquiry.message && (
-                        <div className="rounded-2xl bg-[var(--panel-strong)] p-4">
-                            <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
-                                Original enquiry
-                            </p>
+                {closeError && (
+                    <div className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700 sm:px-6">
+                        {closeError}
+                    </div>
+                )}
 
-                            <p className="mt-2 text-sm">
-                                {enquiry.message}
-                            </p>
+                {/* Message history */}
+                <div className="flex-1 space-y-5 overflow-y-auto bg-[var(--background)]/50 px-4 py-6 sm:px-6">
+                    {/* Original enquiry */}
+                    {enquiry.message && (
+                        <div className="mx-auto max-w-2xl">
+                            <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)]">
+                                <div className="flex items-center gap-2 border-b border-[var(--line)] px-4 py-3">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-4 w-4 text-[var(--brand)]"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                    >
+                                        <path
+                                            d="M8 10h8M8 14h5m-8 7 3-3h10a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v15Z"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                                        Original enquiry
+                                    </p>
+                                </div>
+
+                                <p className="px-4 py-4 text-sm leading-6 text-[var(--foreground)]">
+                                    {enquiry.message}
+                                </p>
+                            </div>
                         </div>
                     )}
 
+                    {/* Empty messages */}
                     {messages.length === 0 ? (
-                        <div className="flex min-h-[250px] items-center justify-center">
-                            <p className="text-sm text-[var(--muted)]">
-                                No messages yet. Start
-                                the negotiation.
+                        <div className="flex min-h-[250px] flex-col items-center justify-center text-center">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--panel-strong)] text-[var(--brand)]">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    className="h-7 w-7"
+                                    stroke="currentColor"
+                                    strokeWidth="1.7"
+                                >
+                                    <path
+                                        d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                    <path
+                                        d="M16 3v6m-3-3h6"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                            </div>
+
+                            <h3 className="mt-4 font-display text-lg font-semibold">
+                                Start the conversation
+                            </h3>
+
+                            <p className="mt-1 max-w-xs text-sm leading-6 text-[var(--muted)]">
+                                Send a message to discuss the property,
+                                ask questions, or begin negotiating.
                             </p>
                         </div>
                     ) : (
                         messages.map((message) => {
                             const isMine =
-                                message.senderId ===
-                                user?.id;
+                                message.senderId === user?.id;
 
                             return (
                                 <div
                                     key={message.id}
-                                    className={`flex ${isMine
-                                        ? "justify-end"
-                                        : "justify-start"
-                                        }`}
+                                    className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                                 >
                                     <div
-                                        className={`max-w-[75%] rounded-2xl px-4 py-3 ${isMine
-                                            ? "bg-[var(--brand)] text-white"
-                                            : "bg-[var(--panel-strong)]"
-                                            }`}
+                                        className={`flex max-w-[88%] flex-col sm:max-w-[75%] ${isMine ? "items-end" : "items-start"}`}
                                     >
                                         {!isMine && (
-                                            <p className="mb-1 text-xs font-medium">
-                                                {
-                                                    message
-                                                        .sender
-                                                        .name
-                                                }
+                                            <p className="mb-1.5 ml-1 text-xs font-semibold text-[var(--muted)]">
+                                                {message.sender.name}
                                             </p>
                                         )}
 
-                                        <p className="whitespace-pre-wrap text-sm">
-                                            {
-                                                message.content
-                                            }
-                                        </p>
-
-                                        <p
-                                            className={`mt-1 text-[11px] ${isMine
-                                                ? "text-white/70"
-                                                : "text-[var(--muted)]"
+                                        <div
+                                            className={`rounded-2xl px-4 py-3 shadow-sm ${isMine
+                                                    ? "rounded-br-md bg-[var(--brand)] text-white"
+                                                    : "rounded-bl-md border border-[var(--line)] bg-[var(--panel)] text-[var(--foreground)]"
                                                 }`}
                                         >
-                                            {new Date(
-                                                message.createdAt,
-                                            ).toLocaleTimeString(
-                                                "en-IN",
-                                                {
-                                                    hour: "numeric",
-                                                    minute: "2-digit",
-                                                },
-                                            )}
-                                        </p>
+                                            <p className="whitespace-pre-wrap break-words text-sm leading-6">
+                                                {message.content}
+                                            </p>
+                                        </div>
+
+                                        <div
+                                            className={`mt-1.5 flex items-center gap-1.5 text-[10px] text-[var(--muted)] ${isMine
+                                                    ? "mr-1"
+                                                    : "ml-1"
+                                                }`}
+                                        >
+                                            <span>
+                                                {formatMessageTime(
+                                                    message.createdAt,
+                                                )}
+                                            </span>
+                                            <span>·</span>
+                                            <span>
+                                                {formatMessageDate(
+                                                    message.createdAt,
+                                                )}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -643,74 +786,143 @@ export default function ConversationPage() {
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Closed State */}
+                {/* Closed conversation */}
                 {isConversationClosed ? (
-                    <div className="border-t border-[var(--border)] bg-[var(--panel-strong)] px-6 py-5">
-                        <p className="text-center text-sm text-[var(--muted)]">
-                            This enquiry is{" "}
-                            {enquiry.status.toLowerCase()}.
-                            New messages cannot be sent.
-                        </p>
+                    <div className="border-t border-[var(--line)] bg-[var(--panel)] px-5 py-6 sm:px-6">
+                        <div className="mx-auto flex max-w-lg items-center justify-center gap-3 text-center">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--panel-strong)] text-[var(--muted)]">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    className="h-4 w-4"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                >
+                                    <path
+                                        d="M6 6l12 12M18 6 6 18"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                            </div>
+
+                            <div className="text-left">
+                                <p className="text-sm font-semibold">
+                                    This conversation is {enquiry.status.toLowerCase()}.
+                                </p>
+
+                                <p className="mt-0.5 text-xs text-[var(--muted)]">
+                                    New messages can no longer be sent.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 ) : (
-                    /* Composer */
-                    <div className="border-t border-[var(--border)] p-5">
+                    /* Message composer */
+                    <div className="border-t border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
                         {sendError && (
-                            <div className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                                {sendError}
+                            <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    className="mt-0.5 h-4 w-4 shrink-0"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                >
+                                    <circle cx="12" cy="12" r="9" />
+                                    <path
+                                        d="M12 8v5m0 3h.01"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+
+                                <span>{sendError}</span>
                             </div>
                         )}
 
-                        <div className="flex items-end gap-3">
+                        <div className="rounded-2xl border border-[var(--line)] bg-[var(--background)] p-2 transition focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/10">
                             <textarea
                                 value={newMessage}
                                 onChange={(event) => {
-                                    setNewMessage(
-                                        event.target.value,
-                                    );
+                                    setNewMessage(event.target.value);
 
                                     if (sendError) {
                                         setSendError(null);
                                     }
                                 }}
-                                onKeyDown={
-                                    handleMessageKeyDown
-                                }
+                                onKeyDown={handleMessageKeyDown}
                                 maxLength={2000}
                                 rows={3}
                                 disabled={sending}
-                                placeholder="Write a message..."
-                                className="min-h-[80px] flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none transition focus:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60"
+                                placeholder="Write your message..."
+                                className="min-h-[76px] w-full resize-none border-0 bg-transparent px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
                             />
 
-                            <button
-                                type="button"
-                                onClick={sendMessage}
-                                disabled={
-                                    sending ||
-                                    !newMessage.trim()
-                                }
-                                className="rounded-2xl bg-[var(--brand)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                {sending
-                                    ? "Sending..."
-                                    : "Send"}
-                            </button>
-                        </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] px-2 pt-2">
+                                <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-4 w-4"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                    >
+                                        <path
+                                            d="M12 18V6m-4 4 4-4 4 4"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
 
-                        <div className="mt-2 flex items-center justify-between text-xs text-[var(--muted)]">
-                            <span>
-                                Enter to send · Shift +
-                                Enter for a new line
-                            </span>
+                                    <span>
+                                        Enter to send · Shift + Enter for a new line
+                                    </span>
+                                </div>
 
-                            <span>
-                                {newMessage.length}/2000
-                            </span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[11px] tabular-nums text-[var(--muted)]">
+                                        {newMessage.length}/2000
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        onClick={sendMessage}
+                                        disabled={
+                                            sending ||
+                                            !newMessage.trim()
+                                        }
+                                        className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        {sending ? (
+                                            <>
+                                                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                                Sending
+                                            </>
+                                        ) : (
+                                            <>
+                                                Send message
+
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    className="h-4 w-4"
+                                                    stroke="currentColor"
+                                                    strokeWidth="1.8"
+                                                >
+                                                    <path
+                                                        d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    />
+                                                </svg>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
-            </div>
+            </section>
         </div>
     );
 }
