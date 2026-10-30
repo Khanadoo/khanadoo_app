@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import AddPropertyModal from "@/components/property/AddPropertyModal";
 import Link from "next/link";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -66,6 +68,20 @@ export default function DashboardPage() {
         accessToken,
         loading: authLoading,
     } = useAuth();
+
+    const router = useRouter();
+
+    const [showCreateModal, setShowCreateModal] =
+        useState(false);
+
+    const refreshOwnerProperties = useCallback(async () => {
+        if (!accessToken) return;
+
+        const response =
+            await propertyClient.getMyProperties(accessToken);
+
+        setProperties(response.properties);
+    }, [accessToken]);
 
     const [userEnquiries, setUserEnquiries] =
         useState<EnquiryWithProperty[]>([]);
@@ -241,13 +257,14 @@ export default function DashboardPage() {
                 <div className="mt-5 flex flex-wrap gap-3">
                     {user.role === "OWNER" ? (
                         <>
-                            <Link
-                                href="/properties/new"
+                            <button
+                                type="button"
+                                onClick={() => setShowCreateModal(true)}
                                 className="inline-flex items-center justify-center rounded-full bg-[var(--brand)] px-5 py-3 text-sm font-medium text-white transition hover:bg-[var(--brand-deep)]"
                             >
                                 <span className="mr-2 text-lg">+</span>
                                 Add Property
-                            </Link>
+                            </button>
 
                             <Link
                                 href="/owner/enquiries"
@@ -293,6 +310,14 @@ export default function DashboardPage() {
                 <UserDashboard
                     enquiries={userEnquiries}
                     stats={userStats}
+                />
+            )}
+
+            {user.role === "OWNER" && (
+                <AddPropertyModal
+                    open={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onCreated={refreshOwnerProperties}
                 />
             )}
         </DashboardLayout>

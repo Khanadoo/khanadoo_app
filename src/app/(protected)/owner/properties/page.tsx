@@ -18,6 +18,8 @@ import PropertyForm, {
     PropertyFormValues,
 } from "@/components/property/PropertyForm";
 
+import AddPropertyModal from "@/components/property/AddPropertyModal";
+
 import { Modal } from "@/components/ui";
 
 export default function MyPropertiesPage() {
@@ -64,28 +66,6 @@ export default function MyPropertiesPage() {
 
         loadProperties();
     }, [accessToken]);
-
-    const handleCreateProperty = async (
-        values: PropertyFormValues
-    ) => {
-        if (!accessToken) return;
-
-        await propertyClient.create(
-            values,
-            accessToken
-        );
-
-        const refreshed =
-            await propertyClient.getMyProperties(
-                accessToken
-            );
-
-        setProperties(
-            refreshed.properties
-        );
-
-        setShowCreateModal(false);
-    };
 
     const handleDelete = async (
         propertyId: string
@@ -329,18 +309,20 @@ export default function MyPropertiesPage() {
             <Footer />
 
             {/* Create Property Modal */}
-            <Modal
+            <AddPropertyModal
                 open={showCreateModal}
-                title="Add property"
-                onClose={() =>
-                    setShowCreateModal(false)
-                }
-            >
-                <PropertyForm
-                    submitLabel="Create Property"
-                    onSubmit={handleCreateProperty}
-                />
-            </Modal>
+                onClose={() => setShowCreateModal(false)}
+                onCreated={async () => {
+                    if (!accessToken) return;
+
+                    const refreshed =
+                        await propertyClient.getMyProperties(
+                            accessToken
+                        );
+
+                    setProperties(refreshed.properties);
+                }}
+            />
 
             {/* Edit Property Modal */}
             <Modal
