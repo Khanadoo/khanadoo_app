@@ -14,6 +14,8 @@ import { propertyClient } from "@/services/property.client";
 import { PropertyDetails } from "@/types/property";
 import { formatCurrency } from "@/lib/utils";
 
+import Skeleton from "@/components/ui/Skeleton";
+
 export default function PropertyDetailsPage() {
     const params = useParams();
     const propertyId = params.id as string;
@@ -71,22 +73,140 @@ export default function PropertyDetailsPage() {
         return (
             <>
                 <Navbar />
-                <main className="min-h-[65vh] bg-[#faf8f5] px-5 py-12">
-                    <div className="mx-auto max-w-7xl animate-pulse">
-                        <div className="h-8 w-48 rounded bg-stone-200" />
-                        <div className="mt-6 h-[300px] rounded-3xl bg-stone-200 md:h-[440px]" />
-                        <div className="mt-8 h-8 w-2/3 rounded bg-stone-200" />
-                        <div className="mt-4 h-5 w-1/3 rounded bg-stone-200" />
-                        <div className="mt-8 grid gap-4 md:grid-cols-4">
-                            {[1, 2, 3, 4].map((item) => (
-                                <div
-                                    key={item}
-                                    className="h-24 rounded-2xl bg-stone-200"
-                                />
-                            ))}
+
+                <main className="min-h-screen bg-[var(--background)] pb-16">
+                    <div className="page-shell py-6 sm:py-8">
+                        {/* Breadcrumb skeleton */}
+                        <div className="mb-6 flex items-center gap-2">
+                            <Skeleton variant="text" className="h-4 w-12" />
+                            <Skeleton variant="text" className="h-4 w-3" />
+                            <Skeleton variant="text" className="h-4 w-24" />
+                        </div>
+
+                        {/* Property gallery skeleton */}
+                        <section>
+                            <Skeleton className="h-[280px] w-full rounded-2xl sm:h-[380px] lg:h-[470px]" />
+
+                            {/* Thumbnail skeletons */}
+                            <div className="mt-3 flex gap-3">
+                                {Array.from({ length: 4 }).map((_, index) => (
+                                    <Skeleton
+                                        key={index}
+                                        className="h-16 w-24 shrink-0 rounded-xl sm:h-20 sm:w-32"
+                                    />
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Main content skeleton */}
+                        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
+                            <div className="min-w-0 space-y-9">
+                                {/* Property heading */}
+                                <section>
+                                    <Skeleton variant="text" className="h-4 w-32" />
+
+                                    <Skeleton
+                                        variant="text"
+                                        className="mt-4 h-9 w-4/5 sm:h-11"
+                                    />
+
+                                    <Skeleton
+                                        variant="text"
+                                        className="mt-4 h-5 w-1/2"
+                                    />
+                                </section>
+
+                                {/* Property overview */}
+                                <section>
+                                    <Skeleton variant="text" className="h-7 w-48" />
+
+                                    <Skeleton
+                                        variant="text"
+                                        className="mt-3 h-4 w-72"
+                                    />
+
+                                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                        {Array.from({ length: 4 }).map((_, index) => (
+                                            <div
+                                                key={index}
+                                                className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5"
+                                            >
+                                                <Skeleton className="h-10 w-10 rounded-xl" />
+                                                <Skeleton
+                                                    variant="text"
+                                                    className="mt-4 h-3 w-3/4"
+                                                />
+                                                <Skeleton
+                                                    variant="text"
+                                                    className="mt-2 h-5 w-1/2"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* Description */}
+                                <section className="border-t border-[var(--line)] pt-8">
+                                    <Skeleton variant="text" className="h-7 w-48" />
+                                    <div className="mt-5 space-y-3">
+                                        <Skeleton variant="text" />
+                                        <Skeleton variant="text" />
+                                        <Skeleton variant="text" className="w-4/5" />
+                                    </div>
+                                </section>
+
+                                {/* Additional details */}
+                                <section className="border-t border-[var(--line)] pt-8">
+                                    <Skeleton variant="text" className="h-7 w-40" />
+
+                                    <div className="mt-5 rounded-2xl border border-[var(--line)] bg-[var(--panel)] px-5">
+                                        {Array.from({ length: 4 }).map((_, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex items-center justify-between gap-4 border-b border-[var(--line)] py-5 last:border-0"
+                                            >
+                                                <Skeleton
+                                                    variant="text"
+                                                    className="h-4 w-1/3"
+                                                />
+                                                <Skeleton
+                                                    variant="text"
+                                                    className="h-4 w-1/4"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
+
+                            {/* Owner and enquiry card skeleton */}
+                            <aside className="hidden lg:block">
+                                <div className="sticky top-24 rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
+                                    <Skeleton variant="text" className="h-4 w-28" />
+                                    <Skeleton
+                                        variant="text"
+                                        className="mt-3 h-9 w-2/3"
+                                    />
+
+                                    <div className="my-6 border-t border-[var(--line)]" />
+
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton variant="circular" />
+                                        <div className="flex-1 space-y-2">
+                                            <Skeleton variant="text" className="h-4 w-1/2" />
+                                            <Skeleton variant="text" className="h-3 w-1/3" />
+                                        </div>
+                                    </div>
+
+                                    <Skeleton variant="text" className="mt-6 h-4 w-4/5" />
+                                    <Skeleton variant="text" className="mt-4 h-4 w-2/3" />
+                                    <Skeleton className="mt-6 h-11 w-full rounded-xl" />
+                                </div>
+                            </aside>
                         </div>
                     </div>
                 </main>
+
                 <Footer />
             </>
         );
@@ -218,8 +338,8 @@ export default function PropertyDetailsPage() {
 
                                 <span
                                     className={`rounded-full px-4 py-2 text-xs font-semibold shadow-sm ${isAvailable
-                                            ? "bg-emerald-50 text-emerald-800"
-                                            : "bg-stone-900/85 text-white"
+                                        ? "bg-emerald-50 text-emerald-800"
+                                        : "bg-stone-900/85 text-white"
                                         }`}
                                 >
                                     {statusLabel}
@@ -245,8 +365,8 @@ export default function PropertyDetailsPage() {
                                         aria-label={`View property photo ${index + 1}`}
                                         aria-pressed={activeImage === index}
                                         className={`shrink-0 overflow-hidden rounded-xl border-2 transition ${activeImage === index
-                                                ? "border-[#a64b35] ring-2 ring-[#a64b35]/15"
-                                                : "border-transparent opacity-70 hover:opacity-100"
+                                            ? "border-[#a64b35] ring-2 ring-[#a64b35]/15"
+                                            : "border-transparent opacity-70 hover:opacity-100"
                                             }`}
                                     >
                                         <img

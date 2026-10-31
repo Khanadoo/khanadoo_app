@@ -1,6 +1,16 @@
+
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
+import {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    useCallback,
+    useRef,
+    ReactNode,
+} from "react";
+
 import { authClient, AuthUser } from "@/services/auth.client";
 
 interface AuthContextType {
@@ -9,6 +19,7 @@ interface AuthContextType {
 
     isAuthenticated: boolean;
     loading: boolean;
+    loggingOut: boolean;
 
     login: (
         email: string,
@@ -33,13 +44,26 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-export function AuthProvider({
-    children,
-}: AuthProviderProps) {
+export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(true);
+    const [loggingOut, setLoggingOut] = useState(false);
+
+    const logout = async () => {
+        if (loggingOut) return;
+
+        setLoggingOut(true);
+
+        try {
+            await authClient.logout();
+        } finally {
+            setUser(null);
+            setAccessToken(null);
+            setLoggingOut(false);
+        }
+    };
 
     const login = async (
         email: string,
@@ -47,7 +71,7 @@ export function AuthProvider({
     ) => {
         const response = await authClient.login({
             email,
-            password
+            password,
         });
 
         setUser(response.user);
@@ -58,23 +82,14 @@ export function AuthProvider({
         name: string,
         email: string,
         password: string,
-        phone: string
+        phone: string,
     ) => {
-        const response = await authClient.register({
+        await authClient.register({
             name,
             email,
             password,
             phone,
         });
-    };
-
-    const logout = async () => {
-        try {
-            await authClient.logout();
-        } finally {
-            setUser(null);
-            setAccessToken(null);
-        }
     };
 
     const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
@@ -124,11 +139,10 @@ export function AuthProvider({
         user,
         accessToken,
 
-        isAuthenticated:
-            !!user &&
-            !!accessToken,
+        isAuthenticated: !!user && !!accessToken,
 
         loading,
+        loggingOut,
 
         login,
         register,
@@ -138,9 +152,7 @@ export function AuthProvider({
     };
 
     return (
-        <AuthContext.Provider
-            value={value}
-        >
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
@@ -150,9 +162,7 @@ export function useAuth() {
     const context = useContext(AuthContext);
 
     if (!context) {
-        throw new Error(
-            "useAuth must be used within AuthProvider"
-        );
+        throw new Error("useAuth must be used within AuthProvider");
     }
 
     return context;

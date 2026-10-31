@@ -1,7 +1,32 @@
-export default function Spinner() {
+
+import { cn } from "@/lib/utils";
+
+interface SpinnerProps {
+    size?: "sm" | "md" | "lg";
+    className?: string;
+    label?: string;
+}
+
+export default function Spinner({
+    size = "md",
+    className,
+    label = "Loading",
+}: SpinnerProps) {
+    const sizes = {
+        sm: "h-4 w-4 border-2",
+        md: "h-6 w-6 border-2",
+        lg: "h-9 w-9 border-[3px]",
+    };
+
     return (
-        <div className="flex justify-center items-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-        </div>
+        <span
+            role="status"
+            aria-label={label}
+            className={cn(
+                "inline-block animate-spin rounded-full border-current border-t-transparent",
+                sizes[size],
+                className,
+            )}
+        />
     );
 }

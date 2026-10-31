@@ -9,6 +9,7 @@ import Footer from "@/components/layout/Footer";
 
 import Badge from "@/components/ui/Badge";
 import Select from "@/components/ui/Select";
+import Skeleton from "@/components/ui/Skeleton";
 
 import { useAuth } from "@/context/AuthContext";
 import { enquiryClient } from "@/services/enquiry.client";
@@ -242,16 +243,125 @@ export default function OwnerEnquiriesPage() {
                     </section>
 
                     {/* Loading State */}
+                    {/* Loading State */}
                     {loading ? (
-                        <div className="surface flex min-h-64 flex-col items-center justify-center rounded-3xl border border-[var(--line)]">
-                            <div className="h-9 w-9 animate-spin rounded-full border-4 border-[var(--line)] border-t-[var(--brand)]" />
+                        <div
+                            className="space-y-10"
+                            role="status"
+                            aria-label="Loading enquiries"
+                        >
+                            {/* Summary Card Skeletons */}
+                            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {Array.from({ length: 4 }).map((_, index) => (
+                                    <div
+                                        key={index}
+                                        className="surface rounded-2xl border border-[var(--line)] p-5"
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <Skeleton variant="text" className="h-4 w-28" />
+                                                <Skeleton variant="text" className="mt-4 h-9 w-14" />
+                                            </div>
 
-                            <p className="mt-4 text-sm font-medium text-[var(--muted)]">
-                                Loading your enquiries...
-                            </p>
+                                            <Skeleton className="h-11 w-11 rounded-2xl" />
+                                        </div>
+
+                                        <Skeleton variant="text" className="mt-5 h-3 w-36" />
+                                    </div>
+                                ))}
+                            </section>
+
+                            {/* Enquiry Workspace Skeleton */}
+                            <section>
+                                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                    <div>
+                                        <Skeleton variant="text" className="h-7 w-44" />
+                                        <Skeleton variant="text" className="mt-2 h-4 w-32" />
+                                    </div>
+
+                                    <Skeleton className="h-12 w-full rounded-xl sm:w-64" />
+                                </div>
+
+                                {/* Enquiry Card Skeletons */}
+                                <div className="space-y-5">
+                                    {Array.from({ length: 3 }).map((_, index) => (
+                                        <article
+                                            key={index}
+                                            className="surface overflow-hidden rounded-3xl border border-[var(--line)]"
+                                        >
+                                            {/* Property Header */}
+                                            <div className="border-b border-[var(--line)] bg-[var(--panel)] px-5 py-5 sm:px-7">
+                                                <Skeleton variant="text" className="h-3 w-28" />
+                                                <Skeleton variant="text" className="mt-3 h-7 w-2/3" />
+                                                <Skeleton variant="text" className="mt-3 h-4 w-40" />
+                                            </div>
+
+                                            {/* Enquiry Details */}
+                                            <div className="px-5 py-6 sm:px-7">
+                                                <div className="grid gap-6 md:grid-cols-3">
+                                                    {/* Interested User */}
+                                                    <div>
+                                                        <Skeleton variant="text" className="h-3 w-28" />
+
+                                                        <div className="mt-3 flex items-center gap-3">
+                                                            <Skeleton variant="circular" />
+
+                                                            <div className="flex-1 space-y-2">
+                                                                <Skeleton variant="text" className="h-4 w-32" />
+                                                                <Skeleton variant="text" className="h-3 w-28" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Email */}
+                                                    <div>
+                                                        <Skeleton variant="text" className="h-3 w-24" />
+                                                        <Skeleton variant="text" className="mt-4 h-4 w-40" />
+                                                    </div>
+
+                                                    {/* Phone */}
+                                                    <div>
+                                                        <Skeleton variant="text" className="h-3 w-28" />
+                                                        <Skeleton variant="text" className="mt-4 h-4 w-32" />
+                                                    </div>
+                                                </div>
+
+                                                {/* Message */}
+                                                <div className="mt-7">
+                                                    <Skeleton variant="text" className="h-3 w-32" />
+
+                                                    <div className="mt-3 rounded-2xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4 space-y-3">
+                                                        <Skeleton variant="text" />
+                                                        <Skeleton variant="text" />
+                                                        <Skeleton variant="text" className="w-3/4" />
+                                                    </div>
+                                                </div>
+
+                                                {/* Footer Actions */}
+                                                <div className="mt-7 flex flex-col gap-5 border-t border-[var(--line)] pt-6 lg:flex-row lg:items-end lg:justify-between">
+                                                    <div className="space-y-3">
+                                                        <Skeleton variant="text" className="h-3 w-24" />
+                                                        <Skeleton variant="text" className="h-4 w-36" />
+                                                        <Skeleton variant="text" className="h-3 w-24" />
+                                                        <Skeleton variant="text" className="h-4 w-28" />
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                                                        <Skeleton className="h-12 w-full rounded-xl sm:w-52" />
+                                                        <Skeleton className="h-11 w-full rounded-full sm:w-48" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <span className="sr-only">Loading your enquiries...</span>
                         </div>
                     ) : (
                         <>
+
                             {/* Error Message */}
                             {error && (
                                 <div

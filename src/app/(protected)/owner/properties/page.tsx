@@ -19,6 +19,7 @@ import PropertyForm, {
 
 import AddPropertyModal from "@/components/property/AddPropertyModal";
 import { Modal } from "@/components/ui";
+import Skeleton from "@/components/ui/Skeleton";
 
 function formatPrice(price: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -256,12 +257,73 @@ export default function MyPropertiesPage() {
 
                     {/* Loading State */}
                     {loading ? (
-                        <div className="surface flex min-h-64 flex-col items-center justify-center rounded-3xl border border-[var(--line)]">
-                            <div className="h-9 w-9 animate-spin rounded-full border-4 border-[var(--line)] border-t-[var(--brand)]" />
+                        <div className="space-y-10" role="status" aria-label="Loading your properties">
+                            {/* Summary Card Skeletons */}
+                            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {Array.from({ length: 4 }).map((_, index) => (
+                                    <div
+                                        key={index}
+                                        className="surface rounded-2xl border border-[var(--line)] p-5"
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <Skeleton variant="text" className="h-4 w-28" />
+                                                <Skeleton variant="text" className="mt-4 h-9 w-14" />
+                                            </div>
 
-                            <p className="mt-4 text-sm font-medium text-[var(--muted)]">
-                                Loading your properties...
-                            </p>
+                                            <Skeleton className="h-11 w-11 rounded-2xl" />
+                                        </div>
+
+                                        <Skeleton variant="text" className="mt-5 h-3 w-36" />
+                                    </div>
+                                ))}
+                            </section>
+
+                            {/* Listings Header Skeleton */}
+                            <section>
+                                <div className="mb-5">
+                                    <Skeleton variant="text" className="h-7 w-36" />
+                                    <Skeleton variant="text" className="mt-2 h-4 w-28" />
+                                </div>
+
+                                {/* Property Card Skeletons */}
+                                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                                    {Array.from({ length: 6 }).map((_, index) => (
+                                        <article
+                                            key={index}
+                                            className="surface overflow-hidden rounded-3xl border border-[var(--line)] p-3"
+                                        >
+                                            {/* Property Image */}
+                                            <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+
+                                            <div className="px-2 pb-2 pt-4">
+                                                {/* Status and Purpose */}
+                                                <div className="mb-5 flex items-center justify-between gap-2">
+                                                    <Skeleton className="h-7 w-24 rounded-full" />
+                                                    <Skeleton variant="text" className="h-4 w-16" />
+                                                </div>
+
+                                                {/* Price */}
+                                                <div className="mb-5">
+                                                    <Skeleton variant="text" className="h-3 w-24" />
+                                                    <Skeleton variant="text" className="mt-2 h-7 w-32" />
+                                                </div>
+
+                                                {/* Lifecycle Action */}
+                                                <Skeleton className="mb-3 h-10 w-full rounded-xl" />
+
+                                                {/* Edit and Delete Actions */}
+                                                <div className="flex gap-3">
+                                                    <Skeleton className="h-10 flex-1 rounded-xl" />
+                                                    <Skeleton className="h-10 flex-1 rounded-xl" />
+                                                </div>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <span className="sr-only">Loading your properties...</span>
                         </div>
                     ) : error ? (
                         /* Error State */

@@ -23,6 +23,8 @@ import {
 import * as Ably from "ably";
 import { createAblyClient } from "@/lib/ably.client";
 
+import Skeleton from "@/components/ui/Skeleton";
+
 export default function ConversationPage() {
     const params = useParams();
     const router = useRouter();
@@ -414,14 +416,120 @@ export default function ConversationPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="flex min-h-[60vh] items-center justify-center">
-                <div className="text-center">
-                    <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--brand)]" />
+            <div
+                className="space-y-6"
+                role="status"
+                aria-label="Loading conversation"
+            >
+                {/* Page Heading */}
+                <div>
+                    <Skeleton variant="text" className="h-4 w-36" />
 
-                    <p className="text-sm font-medium text-[var(--muted)]">
-                        Loading conversation...
-                    </p>
+                    <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+                        <div className="space-y-3">
+                            <Skeleton variant="text" className="h-3 w-36" />
+                            <Skeleton variant="text" className="h-10 w-56" />
+                            <Skeleton variant="text" className="h-4 w-72 max-w-full" />
+                        </div>
+
+                        <Skeleton className="h-9 w-28 rounded-full" />
+                    </div>
                 </div>
+
+                {/* Property Overview */}
+                <section className="surface overflow-hidden rounded-[1.75rem] border border-[var(--line)] p-5 sm:p-6">
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-start gap-4">
+                            <Skeleton className="h-12 w-12 shrink-0 rounded-2xl" />
+
+                            <div className="min-w-0 flex-1 space-y-3">
+                                <Skeleton variant="text" className="h-3 w-28" />
+                                <Skeleton variant="text" className="h-6 w-64 max-w-full" />
+                                <Skeleton variant="text" className="h-4 w-40" />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-5 border-t border-[var(--line)] pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                            <div className="space-y-2">
+                                <Skeleton variant="text" className="h-3 w-20" />
+                                <Skeleton variant="text" className="h-7 w-32" />
+                            </div>
+
+                            <Skeleton className="h-14 w-24 rounded-xl" />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Chat Workspace */}
+                <section className="surface flex min-h-[650px] flex-col overflow-hidden rounded-[1.75rem] border border-[var(--line)]">
+                    {/* Chat Header */}
+                    <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-5 py-4 sm:px-6">
+                        <div className="flex items-center gap-3">
+                            <Skeleton variant="circular" />
+
+                            <div className="space-y-2">
+                                <Skeleton variant="text" className="h-4 w-32" />
+                                <Skeleton variant="text" className="h-3 w-28" />
+                            </div>
+                        </div>
+
+                        <Skeleton className="h-9 w-36 rounded-xl" />
+                    </div>
+
+                    {/* Message History */}
+                    <div className="flex-1 space-y-8 bg-[var(--background)]/50 px-4 py-6 sm:px-6">
+                        {/* Received Message */}
+                        <div className="flex justify-start">
+                            <div className="max-w-[75%] space-y-2">
+                                <Skeleton variant="text" className="h-3 w-24" />
+                                <Skeleton className="h-20 w-64 max-w-full rounded-2xl rounded-bl-md" />
+                                <Skeleton variant="text" className="h-3 w-24" />
+                            </div>
+                        </div>
+
+                        {/* Sent Message */}
+                        <div className="flex justify-end">
+                            <div className="max-w-[75%] space-y-2">
+                                <Skeleton className="h-16 w-72 max-w-full rounded-2xl rounded-br-md" />
+                                <Skeleton variant="text" className="ml-auto h-3 w-24" />
+                            </div>
+                        </div>
+
+                        {/* Received Message */}
+                        <div className="flex justify-start">
+                            <div className="max-w-[75%] space-y-2">
+                                <Skeleton variant="text" className="h-3 w-24" />
+                                <Skeleton className="h-24 w-80 max-w-full rounded-2xl rounded-bl-md" />
+                                <Skeleton variant="text" className="h-3 w-24" />
+                            </div>
+                        </div>
+
+                        {/* Sent Message */}
+                        <div className="flex justify-end">
+                            <div className="max-w-[75%] space-y-2">
+                                <Skeleton className="h-16 w-56 max-w-full rounded-2xl rounded-br-md" />
+                                <Skeleton variant="text" className="ml-auto h-3 w-24" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Message Composer */}
+                    <div className="border-t border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+                        <div className="rounded-2xl border border-[var(--line)] bg-[var(--background)] p-3">
+                            <div className="space-y-3">
+                                <Skeleton variant="text" className="h-4 w-full" />
+                                <Skeleton variant="text" className="h-4 w-3/4" />
+                            </div>
+
+                            <div className="mt-5 flex items-center justify-between border-t border-[var(--line)] pt-3">
+                                <Skeleton variant="text" className="h-3 w-44" />
+                                <Skeleton className="h-9 w-28 rounded-xl" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <span className="sr-only">Loading conversation...</span>
             </div>
         );
     }
@@ -750,8 +858,8 @@ export default function ConversationPage() {
 
                                         <div
                                             className={`rounded-2xl px-4 py-3 shadow-sm ${isMine
-                                                    ? "rounded-br-md bg-[var(--brand)] text-white"
-                                                    : "rounded-bl-md border border-[var(--line)] bg-[var(--panel)] text-[var(--foreground)]"
+                                                ? "rounded-br-md bg-[var(--brand)] text-white"
+                                                : "rounded-bl-md border border-[var(--line)] bg-[var(--panel)] text-[var(--foreground)]"
                                                 }`}
                                         >
                                             <p className="whitespace-pre-wrap break-words text-sm leading-6">
@@ -761,8 +869,8 @@ export default function ConversationPage() {
 
                                         <div
                                             className={`mt-1.5 flex items-center gap-1.5 text-[10px] text-[var(--muted)] ${isMine
-                                                    ? "mr-1"
-                                                    : "ml-1"
+                                                ? "mr-1"
+                                                : "ml-1"
                                                 }`}
                                         >
                                             <span>

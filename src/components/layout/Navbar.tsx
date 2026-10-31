@@ -1,17 +1,34 @@
+
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import NotificationDropdown from "@/components/notifications/NotificationDropDown";
+
+function LogoutContent({ loggingOut }: { loggingOut: boolean }) {
+    return (
+        <span className="inline-flex items-center justify-center gap-2">
+            {loggingOut && (
+                <span
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    aria-hidden="true"
+                />
+            )}
+
+            {loggingOut ? "Logging out..." : "Logout"}
+        </span>
+    );
+}
 
 export default function Navbar() {
     const pathname = usePathname();
     const [menuOpen, setMenuOpen] = useState(false);
 
-    const { logout, isAuthenticated } = useAuth();
+    const { logout, isAuthenticated, loggingOut } = useAuth();
 
     const navLinks = [
         { label: "Home", href: "/" },
@@ -32,10 +49,20 @@ export default function Navbar() {
 
     const closeMenu = () => setMenuOpen(false);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        if (loggingOut) return;
+
         closeMenu();
-        logout();
+
+        try {
+            await logout();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
     };
+
+    const logoutButtonClasses =
+        "rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--panel-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60";
 
     return (
         <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--background)]/95 backdrop-blur-xl">
@@ -72,6 +99,7 @@ export default function Navbar() {
                             >
                                 Login
                             </Link>
+
                             <Link
                                 href="/register"
                                 className="rounded-lg bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--brand-deep)]"
@@ -82,6 +110,7 @@ export default function Navbar() {
                     ) : (
                         <>
                             <NotificationDropdown />
+
                             <Link
                                 href="/dashboard"
                                 aria-current={
@@ -91,12 +120,14 @@ export default function Navbar() {
                             >
                                 Dashboard
                             </Link>
+
                             <button
                                 type="button"
-                                onClick={logout}
-                                className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--panel-strong)] hover:text-[var(--foreground)]"
+                                onClick={handleLogout}
+                                disabled={loggingOut}
+                                className={logoutButtonClasses}
                             >
-                                Logout
+                                <LogoutContent loggingOut={loggingOut} />
                             </button>
                         </>
                     )}
@@ -144,6 +175,7 @@ export default function Navbar() {
                                 >
                                     Login
                                 </Link>
+
                                 <Link
                                     href="/register"
                                     onClick={closeMenu}
@@ -157,6 +189,7 @@ export default function Navbar() {
                                 <div className="flex items-center px-4 py-2">
                                     <NotificationDropdown />
                                 </div>
+
                                 <Link
                                     href="/dashboard"
                                     onClick={closeMenu}
@@ -167,12 +200,14 @@ export default function Navbar() {
                                 >
                                     Dashboard
                                 </Link>
+
                                 <button
                                     type="button"
                                     onClick={handleLogout}
-                                    className="w-full rounded-lg px-4 py-2 text-left text-sm font-medium text-[var(--muted)] hover:bg-[var(--panel-strong)] hover:text-[var(--foreground)]"
+                                    disabled={loggingOut}
+                                    className={cn(logoutButtonClasses, "w-full text-left")}
                                 >
-                                    Logout
+                                    <LogoutContent loggingOut={loggingOut} />
                                 </button>
                             </>
                         )}

@@ -23,6 +23,9 @@ import { Property } from "@/types/property";
 import { EnquiryStatus } from "@/types/common";
 import { formatCurrency } from "@/lib/utils";
 
+import PageLoader from "@/components/ui/PageLoader";
+import Skeleton from "@/components/ui/Skeleton";
+
 function getEnquiryBadgeVariant(
     status: EnquiryStatus,
 ) {
@@ -206,14 +209,13 @@ export default function DashboardPage() {
         ownerEnquiries,
     ]);
 
-    if (authLoading || loading) {
+    if (authLoading) {
         return (
             <DashboardLayout>
-                <div className="flex min-h-[400px] items-center justify-center">
-                    <p className="text-sm text-[var(--muted)]">
-                        Loading your dashboard...
-                    </p>
-                </div>
+                <PageLoader
+                    title="Preparing your dashboard..."
+                    description="Please wait while we verify your account."
+                />
             </DashboardLayout>
         );
     }
@@ -305,11 +307,13 @@ export default function DashboardPage() {
                     properties={properties}
                     enquiries={ownerEnquiries}
                     stats={ownerStats}
+                    loading={loading}
                 />
             ) : (
                 <UserDashboard
                     enquiries={userEnquiries}
                     stats={userStats}
+                    loading={loading}
                 />
             )}
 
@@ -326,6 +330,7 @@ export default function DashboardPage() {
 
 interface UserDashboardProps {
     enquiries: EnquiryWithProperty[];
+    loading: boolean;
 
     stats: {
         total: number;
@@ -338,6 +343,7 @@ interface UserDashboardProps {
 function UserDashboard({
     enquiries,
     stats,
+    loading,
 }: UserDashboardProps) {
     const recentEnquiries =
         enquiries.slice(0, 5);
@@ -346,36 +352,68 @@ function UserDashboard({
         <div className="mt-8 space-y-8 sm:mt-10">
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard
-                    label="Total Enquiries"
-                    value={stats.total}
-                    description="All property enquiries you've submitted."
-                    icon="▤"
-                />
+                {loading ? (
+                    Array.from({ length: 4 }).map((_, index) => (
+                        <div
+                            key={index}
+                            className="surface rounded-[2rem] p-6"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 space-y-3">
+                                    <Skeleton variant="text" className="h-4 w-28" />
+                                    <Skeleton variant="text" className="h-9 w-16" />
+                                </div>
 
-                <StatCard
-                    label="Pending"
-                    value={stats.pending}
-                    description="Waiting for the owner to respond."
-                    icon="◷"
-                    accent="text-amber-700 bg-amber-50"
-                />
+                                <Skeleton
+                                    variant="rectangular"
+                                    className="h-11 w-11 rounded-2xl"
+                                />
+                            </div>
 
-                <StatCard
-                    label="Active"
-                    value={stats.active}
-                    description="Enquiries with ongoing communication."
-                    icon="↔"
-                    accent="text-blue-700 bg-blue-50"
-                />
+                            <Skeleton
+                                variant="text"
+                                className="mt-5 h-4 w-full"
+                            />
+                            <Skeleton
+                                variant="text"
+                                className="mt-2 h-4 w-2/3"
+                            />x
+                        </div>
+                    ))
+                ) : (
+                    <>
+                        <StatCard
+                            label="Total Enquiries"
+                            value={stats.total}
+                            description="All property enquiries you've submitted."
+                            icon="▤"
+                        />
 
-                <StatCard
-                    label="Closed"
-                    value={stats.closed}
-                    description="Enquiries marked as completed."
-                    icon="✓"
-                    accent="text-emerald-700 bg-emerald-50"
-                />
+                        <StatCard
+                            label="Pending"
+                            value={stats.pending}
+                            description="Waiting for the owner to respond."
+                            icon="◷"
+                            accent="text-amber-700 bg-amber-50"
+                        />
+
+                        <StatCard
+                            label="Active"
+                            value={stats.active}
+                            description="Enquiries with ongoing communication."
+                            icon="↔"
+                            accent="text-blue-700 bg-blue-50"
+                        />
+
+                        <StatCard
+                            label="Closed"
+                            value={stats.closed}
+                            description="Enquiries marked as completed."
+                            icon="✓"
+                            accent="text-emerald-700 bg-emerald-50"
+                        />
+                    </>
+                )}
             </section>
 
 
@@ -400,7 +438,24 @@ function UserDashboard({
                 </div>
 
                 <div className="mt-6">
-                    {recentEnquiries.length === 0 ? (
+                    {loading ? (
+                        <div className="divide-y divide-[var(--line)]">
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <div key={index} className="space-y-3 py-5">
+                                    <Skeleton variant="text" className="h-5 w-2/3" />
+                                    <Skeleton variant="text" className="h-4 w-1/2" />
+
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton
+                                            variant="rectangular"
+                                            className="h-6 w-20 rounded-full"
+                                        />
+                                        <Skeleton variant="text" className="h-3 w-24" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : recentEnquiries.length === 0 ? (
                         <EmptyState
                             title="No enquiries yet"
                             description="Find a property you're interested in and send your first enquiry."
@@ -409,27 +464,15 @@ function UserDashboard({
                         />
                     ) : (
                         <div className="divide-y divide-[var(--line)]">
-                            {recentEnquiries.map(
-                                (enquiry) => (
-                                    <EnquiryRow
-                                        key={
-                                            enquiry.id
-                                        }
-                                        title={
-                                            enquiry
-                                                .property
-                                                .title
-                                        }
-                                        location={`${enquiry.property.locality}, ${enquiry.property.city}`}
-                                        status={
-                                            enquiry.status
-                                        }
-                                        date={
-                                            enquiry.updatedAt
-                                        }
-                                    />
-                                ),
-                            )}
+                            {recentEnquiries.map((enquiry) => (
+                                <EnquiryRow
+                                    key={enquiry.id}
+                                    title={enquiry.property.title}
+                                    location={`${enquiry.property.locality}, ${enquiry.property.city}`}
+                                    status={enquiry.status}
+                                    date={enquiry.updatedAt}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
@@ -462,6 +505,7 @@ function UserDashboard({
 interface OwnerDashboardProps {
     properties: Property[];
     enquiries: EnquiryWithUserAndProperty[];
+    loading: boolean;
 
     stats: {
         totalProperties: number;
@@ -475,6 +519,7 @@ function OwnerDashboard({
     properties,
     enquiries,
     stats,
+    loading,
 }: OwnerDashboardProps) {
     const recentEnquiries =
         enquiries.slice(0, 5);
@@ -486,35 +531,67 @@ function OwnerDashboard({
         <div className="mt-8 space-y-8 sm:mt-10">
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard
-                    label="My Properties"
-                    value={stats.totalProperties}
-                    description="Total properties in your listings."
-                    icon="⌂"
-                />
+                {loading ? (
+                    Array.from({ length: 4 }).map((_, index) => (
+                        <div
+                            key={index}
+                            className="surface rounded-[2rem] p-6"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 space-y-3">
+                                    <Skeleton variant="text" className="h-4 w-28" />
+                                    <Skeleton variant="text" className="h-9 w-16" />
+                                </div>
 
-                <StatCard
-                    label="Available"
-                    value={stats.availableProperties}
-                    description="Properties currently available to users."
-                    icon="✓"
-                    accent="text-emerald-700 bg-emerald-50"
-                />
+                                <Skeleton
+                                    variant="rectangular"
+                                    className="h-11 w-11 rounded-2xl"
+                                />
+                            </div>
 
-                <StatCard
-                    label="Total Enquiries"
-                    value={stats.totalEnquiries}
-                    description="Interest received across your properties."
-                    icon="▤"
-                />
+                            <Skeleton
+                                variant="text"
+                                className="mt-5 h-4 w-full"
+                            />
+                            <Skeleton
+                                variant="text"
+                                className="mt-2 h-4 w-2/3"
+                            />
+                        </div>
+                    ))
+                ) : (
+                    <>
+                        <StatCard
+                            label="My Properties"
+                            value={stats.totalProperties}
+                            description="Total properties in your listings."
+                            icon="⌂"
+                        />
 
-                <StatCard
-                    label="Pending Enquiries"
-                    value={stats.pendingEnquiries}
-                    description="Enquiries awaiting your response."
-                    icon="◷"
-                    accent="text-amber-700 bg-amber-50"
-                />
+                        <StatCard
+                            label="Available"
+                            value={stats.availableProperties}
+                            description="Properties currently available to users."
+                            icon="✓"
+                            accent="text-emerald-700 bg-emerald-50"
+                        />
+
+                        <StatCard
+                            label="Total Enquiries"
+                            value={stats.totalEnquiries}
+                            description="Interest received across your properties."
+                            icon="▤"
+                        />
+
+                        <StatCard
+                            label="Pending Enquiries"
+                            value={stats.pendingEnquiries}
+                            description="Enquiries awaiting your response."
+                            icon="◷"
+                            accent="text-amber-700 bg-amber-50"
+                        />
+                    </>
+                )}
             </section>
 
 
@@ -539,39 +616,33 @@ function OwnerDashboard({
                 </div>
 
                 <div className="mt-6">
-                    {recentEnquiries.length === 0 ? (
+                    {loading ? (
+                        <div className="divide-y divide-[var(--line)]">
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <div key={index} className="space-y-3 py-5">
+                                    <Skeleton variant="text" className="h-5 w-2/3" />
+                                    <Skeleton variant="text" className="h-4 w-1/2" />
+                                    <Skeleton variant="text" className="h-3 w-1/3" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : recentEnquiries.length === 0 ? (
                         <EmptyState
                             title="No enquiries yet"
                             description="Enquiries from interested users will appear here."
                         />
                     ) : (
                         <div className="divide-y divide-[var(--line)]">
-                            {recentEnquiries.map(
-                                (enquiry) => (
-                                    <EnquiryRow
-                                        key={
-                                            enquiry.id
-                                        }
-                                        title={
-                                            enquiry
-                                                .property
-                                                .title
-                                        }
-                                        location={`${enquiry.property.locality}, ${enquiry.property.city}`}
-                                        status={
-                                            enquiry.status
-                                        }
-                                        date={
-                                            enquiry.updatedAt
-                                        }
-                                        secondaryText={
-                                            enquiry
-                                                .user
-                                                .name
-                                        }
-                                    />
-                                ),
-                            )}
+                            {recentEnquiries.map((enquiry) => (
+                                <EnquiryRow
+                                    key={enquiry.id}
+                                    title={enquiry.property.title}
+                                    location={`${enquiry.property.locality}, ${enquiry.property.city}`}
+                                    status={enquiry.status}
+                                    date={enquiry.updatedAt}
+                                    secondaryText={enquiry.user.name}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
@@ -598,7 +669,29 @@ function OwnerDashboard({
                 </div>
 
                 <div className="mt-6">
-                    {recentProperties.length === 0 ? (
+                    {loading ? (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <div
+                                    key={index}
+                                    className="rounded-[1.5rem] border border-[var(--line)] p-4"
+                                >
+                                    <div className="flex gap-4">
+                                        <Skeleton
+                                            variant="rectangular"
+                                            className="h-20 w-24 shrink-0"
+                                        />
+
+                                        <div className="flex-1 space-y-3">
+                                            <Skeleton variant="text" className="h-5 w-3/4" />
+                                            <Skeleton variant="text" className="h-4 w-1/2" />
+                                            <Skeleton variant="text" className="h-4 w-1/3" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : recentProperties.length === 0 ? (
                         <EmptyState
                             title="No properties listed"
                             description="Add your first property to start receiving enquiries."
@@ -607,18 +700,12 @@ function OwnerDashboard({
                         />
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2">
-                            {recentProperties.map(
-                                (property) => (
-                                    <PropertySummary
-                                        key={
-                                            property.id
-                                        }
-                                        property={
-                                            property
-                                        }
-                                    />
-                                ),
-                            )}
+                            {recentProperties.map((property) => (
+                                <PropertySummary
+                                    key={property.id}
+                                    property={property}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>

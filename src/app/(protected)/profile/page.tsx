@@ -3,6 +3,8 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import PageLoader from "@/components/ui/PageLoader";
+import Spinner from "@/components/ui/Spinner";
 
 function DetailCard({
     label,
@@ -33,15 +35,19 @@ function DetailCard({
 }
 
 export default function ProfilePage() {
-    const { user, loading, logout } = useAuth();
+    const {
+        user,
+        loading,
+        logout,
+        loggingOut,
+    } = useAuth();
 
     if (loading) {
         return (
-            <div className="surface rounded-[2rem] p-8">
-                <p className="text-sm text-[var(--muted)]">
-                    Loading your profile...
-                </p>
-            </div>
+            <PageLoader
+                title="Loading your profile..."
+                description="Please wait while we get your account information."
+            />
         );
     }
 
@@ -72,6 +78,16 @@ export default function ProfilePage() {
 
     const initial =
         user.name.trim().charAt(0).toUpperCase() || "U";
+
+    const handleLogout = async () => {
+        if (loggingOut) return;
+
+        try {
+            await logout();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
 
     return (
         <div className="mx-auto w-full max-w-5xl space-y-7">
@@ -196,10 +212,12 @@ export default function ProfilePage() {
                             <p className="font-semibold">
                                 Browse Properties
                             </p>
+
                             <p className="mt-1 text-sm text-[var(--muted)]">
                                 Explore available listings.
                             </p>
                         </div>
+
                         <span className="text-lg transition-transform group-hover:translate-x-1">
                             →
                         </span>
@@ -219,12 +237,14 @@ export default function ProfilePage() {
                                     ? "My Properties"
                                     : "My Enquiries"}
                             </p>
+
                             <p className="mt-1 text-sm text-[var(--muted)]">
                                 {user.role === "OWNER"
                                     ? "Manage your property listings."
                                     : "Review your property enquiries."}
                             </p>
                         </div>
+
                         <span className="text-lg transition-transform group-hover:translate-x-1">
                             →
                         </span>
@@ -234,10 +254,18 @@ export default function ProfilePage() {
                 <div className="mt-6 border-t border-[var(--line)] pt-6">
                     <button
                         type="button"
-                        onClick={() => void logout()}
-                        className="rounded-full border border-red-200 px-5 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-red-200 px-5 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Sign Out
+                        {loggingOut ? (
+                            <>
+                                <Spinner size="sm" />
+                                Signing out...
+                            </>
+                        ) : (
+                            "Sign Out"
+                        )}
                     </button>
                 </div>
             </section>

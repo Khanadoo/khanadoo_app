@@ -9,6 +9,8 @@ import PropertyCard from "@/components/ui/PropertyCard";
 import { Property } from "@/types/property";
 import { propertyClient } from "@/services/property.client";
 
+import Skeleton from "@/components/ui/Skeleton";
+
 type PropertyFilters = {
     city?: string;
     locality?: string;
@@ -359,7 +361,7 @@ export default function PropertiesPage() {
                         {/* Loading state */}
                         {loading && (
                             <div
-                                className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+                                className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
                                 role="status"
                                 aria-label="Loading properties"
                             >
@@ -368,14 +370,25 @@ export default function PropertiesPage() {
                                         key={index}
                                         className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--panel)]"
                                     >
-                                        <div className="aspect-[4/3] animate-pulse bg-[var(--panel-strong)]" />
-                                        <div className="space-y-3 p-5">
-                                            <div className="h-5 w-2/3 animate-pulse rounded bg-[var(--panel-strong)]" />
-                                            <div className="h-4 w-1/2 animate-pulse rounded bg-[var(--panel-strong)]" />
-                                            <div className="h-4 w-3/4 animate-pulse rounded bg-[var(--panel-strong)]" />
+                                        {/* Property image */}
+                                        <Skeleton className="aspect-[4/3] w-full rounded-none" />
+
+                                        {/* Property information */}
+                                        <div className="space-y-4 p-5">
+                                            <Skeleton variant="text" className="h-5 w-2/3" />
+
+                                            <Skeleton variant="text" className="h-4 w-1/2" />
+
+                                            <Skeleton variant="text" className="h-4 w-3/4" />
+
+                                            <div className="flex items-center justify-between border-t border-[var(--line)] pt-4">
+                                                <Skeleton variant="text" className="h-5 w-1/3" />
+                                                <Skeleton className="h-9 w-24 rounded-lg" />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
+
                                 <span className="sr-only">Loading properties...</span>
                             </div>
                         )}
