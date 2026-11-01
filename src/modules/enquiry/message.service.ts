@@ -123,7 +123,7 @@ export const createMessage = async (
       type: "NEW_MESSAGE",
       title: "New message",
       message: `${message.sender.name} sent you a message.`,
-      link: `/enquiries/${enquiryId}`,
+      link: `/dashboard/enquiries/${enquiryId}`,
     });
   } catch (error) {
     console.error("Failed to create message notification:", error);

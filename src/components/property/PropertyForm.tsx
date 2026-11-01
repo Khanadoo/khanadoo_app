@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/button";
 import ImageUploader from "./ImageUploader";
 
 import { uploadClient } from "@/services/upload.client";

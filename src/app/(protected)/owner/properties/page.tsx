@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/button";
 import PropertyCard from "@/components/ui/PropertyCard";
 
 import { Property } from "@/types/property";
